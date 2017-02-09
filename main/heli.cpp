@@ -207,7 +207,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
     uchar* destination;
     switch (event)
     {
-        case CV_EVENT_LBUTTONDOWN:
+        case CV_EVENT_LBUTTONDOWN: //CLICK
             Px=x;
             Py=y;
             destination = (uchar*) imagenClick.ptr<uchar>(Py);
@@ -216,7 +216,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vR=destination[Px*3+2];
              points.push_back(Point(x, y));
             break;
-        case CV_EVENT_MOUSEMOVE:
+        case CV_EVENT_MOUSEMOVE: //Desplazamiento de flecha
             PMx=x;
             PMy=y;
             destination = (uchar*) imagenClick.ptr<uchar>(PMy);
@@ -302,11 +302,11 @@ int main(int argc,char* argv[])
 
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
-    namedWindow("C1");
+    namedWindow("C1"); //Histograma Ch1
     setMouseCallback("C1", C1CoordinatesCallback);
-    namedWindow("C2");
+    namedWindow("C2");//Histograma Ch2
     setMouseCallback("C2", C2CoordinatesCallback);
-    namedWindow("C3");
+    namedWindow("C3");//Histograma Ch3
     setMouseCallback("C3", C3CoordinatesCallback);
 
     while (stop == false)
@@ -353,6 +353,7 @@ int main(int argc,char* argv[])
         // put Text
         ostringstream textStream;
         textStream<<"X: "<<PMx<<" Y: "<<PMy<<" RGB: ("<<vMR<<","<<vMG<<","<<vMB<<")";
+	//Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         drawPolygonWithPoints();
@@ -513,4 +514,3 @@ int main(int argc,char* argv[])
 	//delete image;
 	return 0;
 }
-
