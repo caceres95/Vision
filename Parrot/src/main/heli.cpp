@@ -412,8 +412,17 @@ int main(int argc,char* argv[])
 
         // Filter image
         Mat filteredImage = filterColorFromImage(selectedImage);
+        // Applied flood fill to fill inner holes
+        Mat im_floodfill = filteredImage.clone();
+        floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
+        // Invert floodfilled image
+        Mat im_floodfill_inv;
+        bitwise_not(im_floodfill, im_floodfill_inv);
+         
+        // Combine the two images to get the foreground.
+        filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
-        
+
         char key = waitKey(5);
         switch (key) {
             case 'a': yaw = -20000.0; break;
