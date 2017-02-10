@@ -214,7 +214,10 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
-             points.push_back(Point(x, y));
+            points.push_back(Point(x, y));
+            vC1=vB;
+            vC2=vG;
+            vC3=vR;
             break;
         case CV_EVENT_MOUSEMOVE: //Desplazamiento de flecha
             PMx=x;
