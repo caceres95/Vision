@@ -31,88 +31,15 @@ int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
 string ultimo = "init";
 
-int Px, PMx;
-int Py, PMy;
-int vR, vMR;
-int vG, vMG;
-int vB, vMB;
-int C1Px=0;
-int C2Px=0;
-int C3Px=0;
+int Px;
+int Py;
 int vC1, vC2, vC3;
+int thresh1=0, thresh2=0, thresh3=0;
 
 Mat imagenClick;
-
-IplImage* convertImageRGBtoYIQ(const IplImage *imageRGB)
-{
-    float fR, fG, fB;
-    float fY, fI, fQ;
-    const float FLOAT_TO_BYTE = 255.0f;
-    const float BYTE_TO_FLOAT = 1.0f / FLOAT_TO_BYTE;
-    const float MIN_I = -0.5957f;
-    const float MIN_Q = -0.5226f;
-    const float Y_TO_BYTE = 255.0f;
-    const float I_TO_BYTE = 255.0f / (MIN_I * -2.0f);
-    const float Q_TO_BYTE = 255.0f / (MIN_Q * -2.0f);
-
-    // Create a blank YIQ image
-    IplImage *imageYIQ = cvCreateImage(cvGetSize(imageRGB), 8, 3);
-    if (!imageYIQ || imageRGB->depth != 8 || imageRGB->nChannels != 3) {
-        printf("ERROR in convertImageRGBtoYIQ()! Bad input image.\n");
-        exit(1);
-    }
-
-    int h = imageRGB->height;           // Pixel height
-    int w = imageRGB->width;            // Pixel width
-    int rowSizeRGB = imageRGB->widthStep;       // Size of row in bytes, including extra padding.
-    char *imRGB = imageRGB->imageData;      // Pointer to the start of the image pixels.
-    int rowSizeYIQ = imageYIQ->widthStep;       // Size of row in bytes, including extra padding.
-    char *imYIQ = imageYIQ->imageData;      // Pointer to the start of the image pixels.
-    for (int y=0; y<h; y++) {
-        for (int x=0; x<w; x++) {
-            // Get the RGB pixel components. NOTE that OpenCV stores RGB pixels in B,G,R order.
-            uchar *pRGB = (uchar*)(imRGB + y*rowSizeRGB + x*3);
-            int bB = *(uchar*)(pRGB+0); // Blue component
-            int bG = *(uchar*)(pRGB+1); // Green component
-            int bR = *(uchar*)(pRGB+2); // Red component
-
-            // Convert from 8-bit integers to floats
-            fR = bR * BYTE_TO_FLOAT;
-            fG = bG * BYTE_TO_FLOAT;
-            fB = bB * BYTE_TO_FLOAT;
-            // Convert from RGB to YIQ,
-            // where R,G,B are 0-1, Y is 0-1, I is -0.5957 to +0.5957, Q is -0.5226 to +0.5226.
-            fY =    0.299 * fR +    0.587 * fG +    0.114 * fB;
-            fI = 0.595716 * fR - 0.274453 * fG - 0.321263 * fB;
-            fQ = 0.211456 * fR - 0.522591 * fG + 0.311135 * fB;
-            // Convert from floats to 8-bit integers
-            int bY = (int)(0.5f + fY * Y_TO_BYTE);
-            int bI = (int)(0.5f + (fI - MIN_I) * I_TO_BYTE);
-            int bQ = (int)(0.5f + (fQ - MIN_Q) * Q_TO_BYTE);
-
-            // Clip the values to make sure it fits within the 8bits.
-            if (bY > 255)
-                bY = 255;
-            if (bY < 0)
-                bY = 0;
-            if (bI > 255)
-                bI = 255;
-            if (bI < 0)
-                bI = 0;
-            if (bQ > 255)
-                bQ = 255;
-            if (bQ < 0)
-                bQ = 0;
-
-            // Set the YIQ pixel components
-            uchar *pYIQ = (uchar*)(imYIQ + y*rowSizeYIQ + x*3);
-            *(pYIQ+0) = bY;     // Y component
-            *(pYIQ+1) = bI;     // I component
-            *(pYIQ+2) = bQ;     // Q component
-        }
-    }
-    return imageYIQ;
-}
+Mat selectedImage;
+int selected = 1;
+string canales = "RGB";
 /*
  * This method flips horizontally the sourceImage into destinationImage. Because it uses 
  * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
@@ -210,22 +137,13 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
         case CV_EVENT_LBUTTONDOWN: //CLICK
             Px=x;
             Py=y;
-            destination = (uchar*) imagenClick.ptr<uchar>(Py);
-            vB=destination[Px * 3];
-            vG=destination[Px*3+1];
-            vR=destination[Px*3+2];
+            destination = (uchar*) selectedImage.ptr<uchar>(Py);
+            vC1=destination[Px * 3];
+            vC2=destination[Px*3+1];
+            vC3=destination[Px*3+2];
             points.push_back(Point(x, y));
-            vC1=vB;
-            vC2=vG;
-            vC3=vR;
             break;
         case CV_EVENT_MOUSEMOVE: //Desplazamiento de flecha
-            PMx=x;
-            PMy=y;
-            destination = (uchar*) imagenClick.ptr<uchar>(PMy);
-            vMB=destination[PMx * 3];
-            vMG=destination[PMx*3+1];
-            vMR=destination[PMx*3+2];
             break;
         case CV_EVENT_LBUTTONUP:
             break;
@@ -243,9 +161,6 @@ void C1CoordinatesCallback(int event, int x, int y, int flags, void* param)
         case CV_EVENT_LBUTTONDOWN:
             vC1=x;
             break;
-        case CV_EVENT_MOUSEMOVE:
-            C1Px=x;
-            break;
     }
 }
 //codigo del click en pantalla
@@ -255,9 +170,6 @@ void C2CoordinatesCallback(int event, int x, int y, int flags, void* param)
     {
         case CV_EVENT_LBUTTONDOWN:
             vC2=x;
-            break;
-        case CV_EVENT_MOUSEMOVE:
-            C2Px=x;
             break;
     }
 }
@@ -269,11 +181,32 @@ void C3CoordinatesCallback(int event, int x, int y, int flags, void* param)
         case CV_EVENT_LBUTTONDOWN:
             vC3=x;
             break;
-        case CV_EVENT_MOUSEMOVE:
-            C3Px=x;
-            break;
     }
 }
+void on_trackbar( int, void* ){}
+
+Mat filterColorFromImage(const Mat &sourceImage) {
+    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x) {
+            if (
+                sourceImage.at<Vec3b>(y, x)[0] >= (vC1-thresh1) && sourceImage.at<Vec3b>(y, x)[0] <= (vC1+thresh1) &&
+                sourceImage.at<Vec3b>(y, x)[1] >= (vC2-thresh2) && sourceImage.at<Vec3b>(y, x)[1] <= (vC2+thresh2) &&
+                sourceImage.at<Vec3b>(y, x)[2] >= (vC3-thresh3) && sourceImage.at<Vec3b>(y, x)[2] <= (vC3+thresh3)
+                )
+            {
+                destinationImage.at<Vec3b>(y, x) = white;
+            }
+            else
+            {
+                destinationImage.at<Vec3b>(y, x) = black;
+            }
+        }
+    return destinationImage;
+}
+
 int main(int argc,char* argv[])
 {
     VideoCapture cap(0); // open the default camera
@@ -311,7 +244,13 @@ int main(int argc,char* argv[])
     setMouseCallback("C2", C2CoordinatesCallback);
     namedWindow("C3");//Histograma Ch3
     setMouseCallback("C3", C3CoordinatesCallback);
+    namedWindow("Controls", WINDOW_NORMAL);
+    createTrackbar( "Threshold 1", "Controls", &thresh1, 100, on_trackbar );
+    createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
+    createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
+    cap >> currentImage;
+    selectedImage = currentImage;
     while (stop == false)
     {
 
@@ -346,8 +285,7 @@ int main(int argc,char* argv[])
         fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
         fprintf(stdout, "  Land    : %d \n", joypadLand);
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor RGB: ("<<vR<<","<<vG<<","<<vB<<")"<<endl;
-        cout<<"Histogramas "<<Py<<" Valor C1 C2 C3: ("<<vC1<<","<<vC2<<","<<vC3<<")"<<endl;
+        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         cap >> currentImage;
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
@@ -355,7 +293,7 @@ int main(int argc,char* argv[])
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
-        textStream<<"X: "<<PMx<<" Y: "<<PMy<<" RGB: ("<<vMR<<","<<vMG<<","<<vMB<<")";
+        textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
 	//Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
@@ -384,9 +322,14 @@ int main(int argc,char* argv[])
         cvtColor(currentImage, hsv, CV_BGR2HSV);
         imshow("HSV", hsv);
 
+        switch(selected) {
+            case 1: selectedImage = currentImage; canales="RGB"; break;
+            case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
+            case 3: selectedImage = hsv; canales="HSV"; break;
+        }
         // Histogram
         vector<Mat> bgr_planes;
-        split( currentImage, bgr_planes );
+        split( selectedImage, bgr_planes );
         int histSize = 256; //from 0 to 255
         /// Set the ranges ( for B,G,R) )
         float range[] = { 0, 256 } ; //the upper boundary is exclusive
@@ -422,11 +365,12 @@ int main(int argc,char* argv[])
         // draw intensity bars
         int space = 10;
         Scalar white(255,255,255);
+        Scalar gray(128, 128, 128);
         for (int j=0;j<barHeight;j++) {
             for (int i=0;i<256;i++) {
-                Scalar histC1Color = (i==vC1) ? white: Scalar( bin_w*(i-1), 0, 0);
-                Scalar histC2Color = (i==vC2) ? white: Scalar( 0, bin_w*(i-1), 0);
-                Scalar histC3Color = (i==vC3) ? white: Scalar( 0, 0, bin_w*(i-1));
+                Scalar histC1Color = (i==vC1) ? white: (i==(vC1-thresh1)||i==(vC1+thresh1)) ? gray: Scalar( bin_w*(i-1), 0, 0);
+                Scalar histC2Color = (i==vC2) ? white: (i==(vC2-thresh2)||i==(vC2+thresh2)) ? gray: Scalar( 0, bin_w*(i-1), 0);
+                Scalar histC3Color = (i==vC3) ? white: (i==(vC3-thresh3)||i==(vC3+thresh3)) ? gray: Scalar( 0, 0, bin_w*(i-1));
                 // blue
                 line( histImageC1, Point( bin_w*(i-1), space+hist_h+j ) ,
                                  Point( bin_w*(i), space+hist_h+j ),
@@ -443,15 +387,21 @@ int main(int argc,char* argv[])
         }
         // put text to histograms
         ostringstream histTextStream;
-        histTextStream<<"Intensity: "<<C1Px;
+        histTextStream<<canales[2]<<": "<<vC1;
+        if (thresh1 > 0 && (vC1-thresh1) > 0) histTextStream<<" "<<canales[2]<<"Min"<<": "<<vC1-thresh1;
+        if (thresh1 > 0 && (vC1+thresh1) < 256) histTextStream<<" "<<canales[2]<<"Max"<<": "<<vC1+thresh1;
         putText(histImageC1, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
-        histTextStream<<"Intensity: "<<C2Px;
+        histTextStream<<canales[1]<<": "<<vC2;
+        if (thresh2 > 0 && (vC2-thresh2) > 0) histTextStream<<" "<<canales[1]<<"Min"<<": "<<vC2-thresh2;
+        if (thresh2 > 0 && (vC2+thresh2) < 256) histTextStream<<" "<<canales[1]<<"Max"<<": "<<vC2+thresh2;
         putText(histImageC2, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
-        histTextStream<<"Intensity: "<<C3Px;
+        histTextStream<<canales[0]<<": "<<vC3;
+        if (thresh3 > 0 && (vC3-thresh3) > 0) histTextStream<<" "<<canales[0]<<"Min"<<": "<<vC3-thresh3;
+        if (thresh3 > 0 && (vC3+thresh3) < 256) histTextStream<<" "<<canales[0]<<"Max"<<": "<<vC3+thresh3;
         putText(histImageC3, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
@@ -460,6 +410,10 @@ int main(int argc,char* argv[])
         imshow("C2", histImageC2 );
         imshow("C3", histImageC3 );
 
+        // Filter image
+        Mat filteredImage = filterColorFromImage(selectedImage);
+        imshow("Filtered Image", filteredImage);
+        
         char key = waitKey(5);
         switch (key) {
             case 'a': yaw = -20000.0; break;
@@ -477,10 +431,13 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
+            case '1': selected=1; break;
+            case '2': selected=2; break;
+            case '3': selected=3; break;
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
         }
-
+ 
         // if (joypadTakeOff) {
         //     heli->takeoff();
         // }
