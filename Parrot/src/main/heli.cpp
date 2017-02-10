@@ -288,6 +288,7 @@ int main(int argc,char* argv[])
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         cap >> currentImage;
+
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
         imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
@@ -410,6 +411,8 @@ int main(int argc,char* argv[])
         imshow("C2", histImageC2 );
         imshow("C3", histImageC3 );
 
+        // Blur image
+        blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage = filterColorFromImage(selectedImage);
         // Applied flood fill to fill inner holes
