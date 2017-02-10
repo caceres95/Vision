@@ -185,6 +185,28 @@ void C3CoordinatesCallback(int event, int x, int y, int flags, void* param)
 }
 void on_trackbar( int, void* ){}
 
+Mat filterColorFromImage(const Mat &sourceImage) {
+    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x) {
+            if (
+                sourceImage.at<Vec3b>(y, x)[0] >= (vC1-thresh1) && sourceImage.at<Vec3b>(y, x)[0] <= (vC1+thresh1) &&
+                sourceImage.at<Vec3b>(y, x)[1] >= (vC2-thresh2) && sourceImage.at<Vec3b>(y, x)[1] <= (vC2+thresh2) &&
+                sourceImage.at<Vec3b>(y, x)[2] >= (vC3-thresh3) && sourceImage.at<Vec3b>(y, x)[2] <= (vC3+thresh3)
+                )
+            {
+                destinationImage.at<Vec3b>(y, x) = white;
+            }
+            else
+            {
+                destinationImage.at<Vec3b>(y, x) = black;
+            }
+        }
+    return destinationImage;
+}
+
 int main(int argc,char* argv[])
 {
     VideoCapture cap(0); // open the default camera
@@ -388,6 +410,10 @@ int main(int argc,char* argv[])
         imshow("C2", histImageC2 );
         imshow("C3", histImageC3 );
 
+        // Filter image
+        Mat filteredImage = filterColorFromImage(selectedImage);
+        imshow("Filtered Image", filteredImage);
+        
         char key = waitKey(5);
         switch (key) {
             case 'a': yaw = -20000.0; break;
