@@ -34,6 +34,7 @@ string ultimo = "init";
 int Px;
 int Py;
 int vC1, vC2, vC3;
+int thresh1=0, thresh2=0, thresh3=0;
 
 Mat imagenClick;
 Mat selectedImage;
@@ -182,6 +183,8 @@ void C3CoordinatesCallback(int event, int x, int y, int flags, void* param)
             break;
     }
 }
+void on_trackbar( int, void* ){}
+
 int main(int argc,char* argv[])
 {
     VideoCapture cap(0); // open the default camera
@@ -219,6 +222,11 @@ int main(int argc,char* argv[])
     setMouseCallback("C2", C2CoordinatesCallback);
     namedWindow("C3");//Histograma Ch3
     setMouseCallback("C3", C3CoordinatesCallback);
+    namedWindow("Controls", WINDOW_NORMAL);
+    createTrackbar( "Threshold 1", "Controls", &thresh1, 100, on_trackbar );
+    createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
+    createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
+
     cap >> currentImage;
     selectedImage = currentImage;
     while (stop == false)
@@ -335,11 +343,12 @@ int main(int argc,char* argv[])
         // draw intensity bars
         int space = 10;
         Scalar white(255,255,255);
+        Scalar gray(128, 128, 128);
         for (int j=0;j<barHeight;j++) {
             for (int i=0;i<256;i++) {
-                Scalar histC1Color = (i==vC1) ? white: Scalar( bin_w*(i-1), 0, 0);
-                Scalar histC2Color = (i==vC2) ? white: Scalar( 0, bin_w*(i-1), 0);
-                Scalar histC3Color = (i==vC3) ? white: Scalar( 0, 0, bin_w*(i-1));
+                Scalar histC1Color = (i==vC1) ? white: (i==(vC1-thresh1)||i==(vC1+thresh1)) ? gray: Scalar( bin_w*(i-1), 0, 0);
+                Scalar histC2Color = (i==vC2) ? white: (i==(vC2-thresh2)||i==(vC2+thresh2)) ? gray: Scalar( 0, bin_w*(i-1), 0);
+                Scalar histC3Color = (i==vC3) ? white: (i==(vC3-thresh3)||i==(vC3+thresh3)) ? gray: Scalar( 0, 0, bin_w*(i-1));
                 // blue
                 line( histImageC1, Point( bin_w*(i-1), space+hist_h+j ) ,
                                  Point( bin_w*(i), space+hist_h+j ),
@@ -357,14 +366,20 @@ int main(int argc,char* argv[])
         // put text to histograms
         ostringstream histTextStream;
         histTextStream<<canales[2]<<": "<<vC1;
+        if (thresh1 > 0 && (vC1-thresh1) > 0) histTextStream<<" "<<canales[2]<<"Min"<<": "<<vC1-thresh1;
+        if (thresh1 > 0 && (vC1+thresh1) < 256) histTextStream<<" "<<canales[2]<<"Max"<<": "<<vC1+thresh1;
         putText(histImageC1, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
         histTextStream<<canales[1]<<": "<<vC2;
+        if (thresh2 > 0 && (vC2-thresh2) > 0) histTextStream<<" "<<canales[1]<<"Min"<<": "<<vC2-thresh2;
+        if (thresh2 > 0 && (vC2+thresh2) < 256) histTextStream<<" "<<canales[1]<<"Max"<<": "<<vC2+thresh2;
         putText(histImageC2, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
         histTextStream<<canales[0]<<": "<<vC3;
+        if (thresh3 > 0 && (vC3-thresh3) > 0) histTextStream<<" "<<canales[0]<<"Min"<<": "<<vC3-thresh3;
+        if (thresh3 > 0 && (vC3+thresh3) < 256) histTextStream<<" "<<canales[0]<<"Max"<<": "<<vC3+thresh3;
         putText(histImageC3, histTextStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
         histTextStream.str(string());
