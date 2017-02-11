@@ -42,6 +42,12 @@ int C3Px=0;
 int vC1, vC2, vC3;
 
 Mat imagenClick;
+//Variable donde se almacenara la imagen congelada
+Mat frozenImageBGR;
+Mat frozenImageYIQ;
+Mat frozenImageHSV;
+
+
 
 IplImage* convertImageRGBtoYIQ(const IplImage *imageRGB)
 {
@@ -138,7 +144,7 @@ void drawPolygonWithPoints() {
         int previous=0;
         Scalar color=Scalar( 0, 0, 255 );
      /* Draw all points */
-        for (int current = 0; current < points.size(); ++current) {
+        for (int current = 0; current < (int) points.size(); ++current) {
             circle(imagenClick, (Point)points[current], 5, color, CV_FILLED);
             if (current>0) {
                 line( imagenClick, points[previous],points[current],color,thickness,lineType);
@@ -214,6 +220,9 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
             vR=destination[Px*3+2];
+	    vC1=vB;
+	    vC2=vG;
+	    vC3=vR;
              points.push_back(Point(x, y));
             break;
         case CV_EVENT_MOUSEMOVE: //Desplazamiento de flecha
@@ -474,6 +483,20 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
+	    case 'f':
+		currentImage.copyTo(frozenImageBGR);
+		imshow("Frozen Image", frozenImageBGR);
+
+		//Congela una imagen en el modelo HSV
+        	cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
+		imshow("Frozen Image in HSV", frozenImageHSV);
+
+		//Congela una imagen en el modelo HSV
+		frozenImageYIQ=bgr2yiq(frozenImageBGR);
+		imshow("Frozen Image in YIQ", frozenImageYIQ);
+
+		break;
+
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
         }
