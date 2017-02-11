@@ -484,6 +484,7 @@ int main(int argc,char* argv[])
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
 	    case 'f':
+		//Funcion para congelar la imagen una vez el usuario oprima la tecla f
 		currentImage.copyTo(frozenImageBGR);
 		imshow("Frozen Image", frozenImageBGR);
 
