@@ -14,6 +14,12 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <opencv/cv.h>
+#include <errno.h>
+#include <math.h>
+#include <opencv/highgui.h>
+
+
 using namespace std;
 using namespace cv;
 
@@ -136,6 +142,7 @@ double yiqMat[3][3] = {
     {-0.332, -0.274, 0.596},
     {0.312, -0.523, 0.211}
 };
+
 Mat bgr2yiq(const Mat &sourceImage) {
     Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
@@ -159,6 +166,31 @@ Mat bgr2yiq(const Mat &sourceImage) {
         }
     return destinationImage;
 }
+
+Mat bgr2yiq2(const Mat &sourceImage) {
+    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x) {
+            // bgr to yiq conversion
+            double yiq[3];
+            for (int i=0;i<3;i++) {
+                yiq[i]=0;
+                for (int j=0;j<3;j++) {
+                    yiq[i] += yiqMat[i][j] * sourceImage.at<Vec3b>(y, x)[j];
+                }
+            }
+            // normalize values
+            yiq[0] = yiq[0]; // Y
+            yiq[1] = CV_CAST_8U((int)(yiq[1])); // I
+            yiq[2] = CV_CAST_8U((int)(yiq[2])); //Q
+
+            Vec3b intensity(yiq[2], yiq[1], yiq[0]);
+            destinationImage.at<Vec3b>(y, x) = intensity;
+
+        }
+    return destinationImage;
+}
+
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
 {   
@@ -253,7 +285,7 @@ Mat filterColorFromImage(const Mat &sourceImage) {
 
 int main(int argc,char* argv[])
 {
-    VideoCapture cap(0); // open the default camera
+    VideoCapture cap(1); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
     //establishing connection with the quadcopter
@@ -367,6 +399,9 @@ int main(int argc,char* argv[])
         //imshow("YIQOther", yiqImage);
         Mat yiqOurImage = bgr2yiq(currentImage);
         imshow("Our YIQ", yiqOurImage);
+
+        Mat yiqOurImage2 = bgr2yiq2(currentImage);
+        imshow("YIQ2", yiqOurImage2);
 
         //BGR to HSV
         Mat hsv;
