@@ -124,15 +124,15 @@ Mat bgr2yiq(const Mat &sourceImage) {
 }
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
-{	
-	uchar *pointerImage = destImage.ptr(0);
-	
-	for (int i = 0; i < 240*320; i++)
-	{
-		pointerImage[3*i] = sourceImage->data[3*i+2];
-		pointerImage[3*i+1] = sourceImage->data[3*i+1];
-		pointerImage[3*i+2] = sourceImage->data[3*i];
-	}
+{   
+    uchar *pointerImage = destImage.ptr(0);
+    
+    for (int i = 0; i < 240*320; i++)
+    {
+        pointerImage[3*i] = sourceImage->data[3*i+2];
+        pointerImage[3*i+1] = sourceImage->data[3*i+1];
+        pointerImage[3*i+2] = sourceImage->data[3*i];
+    }
 }
 
 //codigo del click en pantalla
@@ -219,20 +219,20 @@ int main(int argc,char* argv[])
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
-	//establishing connection with the quadcopter
-	// heli = new CHeli();
-	
-	//this class holds the image from the drone	
-	// image = new CRawImage(320,240);
-	
-	// Initial values for control	
+    //establishing connection with the quadcopter
+    // heli = new CHeli();
+    
+    //this class holds the image from the drone 
+    // image = new CRawImage(320,240);
+    
+    // Initial values for control   
     pitch = roll = yaw = height = 0.0;
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
-	// Destination OpenCV Mat	
-	Mat currentImage;// = Mat(240, 320, CV_8UC3);
-	// Show it	
-	//imshow("ParrotCam", currentImage);
+    // Destination OpenCV Mat   
+    Mat currentImage;// = Mat(240, 320, CV_8UC3);
+    // Show it  
+    //imshow("ParrotCam", currentImage);
 
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
@@ -302,7 +302,7 @@ int main(int argc,char* argv[])
         // put Text
         ostringstream textStream;
         textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
-	//Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+    //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         drawPolygonWithPoints();
@@ -450,19 +450,19 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
-    	    case 'f':
-    		//Funcion para congelar la imagen una vez el usuario oprima la tecla f
-    		currentImage.copyTo(frozenImageBGR);
-    		imshow("Frozen Image", frozenImageBGR);
+            case 'f':
+            //Funcion para congelar la imagen una vez el usuario oprima la tecla f
+            currentImage.copyTo(frozenImageBGR);
+            imshow("Frozen Image", frozenImageBGR);
 
-    		//Congela una imagen en el modelo HSV
-            	cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
-    		imshow("Frozen Image in HSV", frozenImageHSV);
+            //Congela una imagen en el modelo HSV
+            cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
+            imshow("Frozen Image in HSV", frozenImageHSV);
 
-    		//Congela una imagen en el modelo HSV
-    		frozenImageYIQ=bgr2yiq(frozenImageBGR);
-    		imshow("Frozen Image in YIQ", frozenImageYIQ);
-    		break;
+            //Congela una imagen en el modelo HSV
+            frozenImageYIQ=bgr2yiq(frozenImageBGR);
+            imshow("Frozen Image in YIQ", frozenImageYIQ);
+            break;
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
@@ -490,20 +490,20 @@ int main(int argc,char* argv[])
             // heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
-	
-		//image is captured
-		// heli->renewImage(image);
+    
+        //image is captured
+        // heli->renewImage(image);
 
-		// Copy to OpenCV Mat
-		// rawToMat(currentImage, image);
+        // Copy to OpenCV Mat
+        // rawToMat(currentImage, image);
         
 
         usleep(15000);
-	}
-	
-	// heli->land();
+    }
+    
+    // heli->land();
     SDL_JoystickClose(m_joystick);
     // delete heli;
-	//delete image;
-	return 0;
+    //delete image;
+    return 0;
 }
