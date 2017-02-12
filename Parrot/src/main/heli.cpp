@@ -130,6 +130,7 @@ Mat grayScale(const Mat &sourceImage) {
     return destinationImage;
 }
 
+// Matriz para convertir a YIQ
 double yiqMat[3][3] = {
     {0.114, 0.587, 0.299},
     {-0.332, -0.274, 0.596},
