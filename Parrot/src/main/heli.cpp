@@ -30,6 +30,8 @@ bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
 string ultimo = "init";
+unsigned char luminositySlider;
+
 
 int Px;
 int Py;
@@ -37,13 +39,54 @@ int vC1, vC2, vC3;
 int thresh1=0, thresh2=0, thresh3=0;
 
 Mat imagenClick;
+
+//Variable donde se almacenara la imagen congelada
+Mat frozenImageBGR;
+Mat frozenImageYIQ;
+Mat frozenImageHSV;
+//Matriz donde se guardara la imagen en blanco y negro
+Mat binarizedImage;
+
+
+
 Mat selectedImage;
 int selected = 1;
 string canales = "RGB";
+
 /*
  * This method flips horizontally the sourceImage into destinationImage. Because it uses 
  * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
  */
+
+void binarizeImage (const Mat &sourceImage, Mat &destinationImage, unsigned char threshold)
+{
+	//Si la imagen de destino no esta inicializada, se inicializa con las caracteristicas de la matriz fuente
+	if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+    //Recorre todos los pixels de la matriz
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x)
+
+            	if(sourceImage.at<Vec3b>(y, x)[0]<threshold)
+            	{	
+            		//La luminosidad es menor al threshold, se pone en negro
+            		destinationImage.at<Vec3b>(y, x)[0] =0;
+            		destinationImage.at<Vec3b>(y, x)[1] =0;
+            		destinationImage.at<Vec3b>(y, x)[2] =0;
+            	}
+
+            	else 
+            	{
+            		//Se pone en blanco
+            		destinationImage.at<Vec3b>(y, x)[0] =255;
+            		destinationImage.at<Vec3b>(y, x)[1] =255;
+            		destinationImage.at<Vec3b>(y, x)[2] =255;
+            	}
+              
+}
+
+
 void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 {
     if (destinationImage.empty())
@@ -65,7 +108,7 @@ void drawPolygonWithPoints() {
         int previous=0;
         Scalar color=Scalar( 0, 0, 255 );
      /* Draw all points */
-        for (int current = 0; current < points.size(); ++current) {
+        for (int current = 0; current < (int) points.size(); ++current) {
             circle(imagenClick, (Point)points[current], 5, color, CV_FILLED);
             if (current>0) {
                 line( imagenClick, points[previous],points[current],color,thickness,lineType);
@@ -76,7 +119,7 @@ void drawPolygonWithPoints() {
     }
 }
 
-Mat blackAndWhite(const Mat &sourceImage) {
+Mat grayScale(const Mat &sourceImage) {
     Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
         for (int x = 0; x < sourceImage.cols; ++x) {
@@ -87,6 +130,7 @@ Mat blackAndWhite(const Mat &sourceImage) {
     return destinationImage;
 }
 
+// Matriz para convertir a YIQ
 double yiqMat[3][3] = {
     {0.114, 0.587, 0.299},
     {-0.332, -0.274, 0.596},
@@ -117,15 +161,15 @@ Mat bgr2yiq(const Mat &sourceImage) {
 }
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
-{	
-	uchar *pointerImage = destImage.ptr(0);
-	
-	for (int i = 0; i < 240*320; i++)
-	{
-		pointerImage[3*i] = sourceImage->data[3*i+2];
-		pointerImage[3*i+1] = sourceImage->data[3*i+1];
-		pointerImage[3*i+2] = sourceImage->data[3*i];
-	}
+{   
+    uchar *pointerImage = destImage.ptr(0);
+    
+    for (int i = 0; i < 240*320; i++)
+    {
+        pointerImage[3*i] = sourceImage->data[3*i+2];
+        pointerImage[3*i+1] = sourceImage->data[3*i+1];
+        pointerImage[3*i+2] = sourceImage->data[3*i];
+    }
 }
 
 //codigo del click en pantalla
@@ -212,20 +256,20 @@ int main(int argc,char* argv[])
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
-	//establishing connection with the quadcopter
-	// heli = new CHeli();
-	
-	//this class holds the image from the drone	
-	// image = new CRawImage(320,240);
-	
-	// Initial values for control	
+    //establishing connection with the quadcopter
+    // heli = new CHeli();
+    
+    //this class holds the image from the drone 
+    // image = new CRawImage(320,240);
+    
+    // Initial values for control   
     pitch = roll = yaw = height = 0.0;
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
-	// Destination OpenCV Mat	
-	Mat currentImage;// = Mat(240, 320, CV_8UC3);
-	// Show it	
-	//imshow("ParrotCam", currentImage);
+    // Destination OpenCV Mat   
+    Mat currentImage;// = Mat(240, 320, CV_8UC3);
+    // Show it  
+    //imshow("ParrotCam", currentImage);
 
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
@@ -248,6 +292,8 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 1", "Controls", &thresh1, 100, on_trackbar );
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
+
+	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
 
     cap >> currentImage;
     selectedImage = currentImage;
@@ -288,13 +334,14 @@ int main(int argc,char* argv[])
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         cap >> currentImage;
+
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
         imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
         textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
-	//Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+    //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         drawPolygonWithPoints();
@@ -305,11 +352,15 @@ int main(int argc,char* argv[])
         //imshow("Flipped", flipped);
 
         //BGR to Gray Scale
-        Mat blackWhite = blackAndWhite(currentImage);
+        Mat blackWhite = grayScale(currentImage);
         imshow("Black and White", blackWhite);
         IplImage* image = cvCreateImage(cvSize(currentImage.cols, currentImage.rows), 8, 3);
         IplImage ipltemp = currentImage;
         cvCopy(&ipltemp, image);
+
+        //BINARIZACION
+        binarizeImage(blackWhite,binarizedImage, luminositySlider);
+        imshow("Binarized Image",binarizedImage);
 
         //BGR to YIQ
         //Mat yiqImage(convertImageRGBtoYIQ(image));
@@ -410,10 +461,21 @@ int main(int argc,char* argv[])
         imshow("C2", histImageC2 );
         imshow("C3", histImageC3 );
 
+        // Blur image
+        blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage = filterColorFromImage(selectedImage);
+        // Applied flood fill to fill inner holes
+        Mat im_floodfill = filteredImage.clone();
+        floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
+        // Invert floodfilled image
+        Mat im_floodfill_inv;
+        bitwise_not(im_floodfill, im_floodfill_inv);
+         
+        // Combine the two images to get the foreground.
+        filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
-        
+
         char key = waitKey(5);
         switch (key) {
             case 'a': yaw = -20000.0; break;
@@ -431,9 +493,23 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
+            case 'f':
+            //Funcion para congelar la imagen una vez el usuario oprima la tecla f
+            currentImage.copyTo(frozenImageBGR);
+            imshow("Frozen Image", frozenImageBGR);
+
+            //Congela una imagen en el modelo HSV
+            cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
+            imshow("Frozen Image in HSV", frozenImageHSV);
+
+            //Congela una imagen en el modelo HSV
+            frozenImageYIQ=bgr2yiq(frozenImageBGR);
+            imshow("Frozen Image in YIQ", frozenImageYIQ);
+            break;
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
+
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
         }
@@ -457,20 +533,20 @@ int main(int argc,char* argv[])
             // heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
-	
-		//image is captured
-		// heli->renewImage(image);
+    
+        //image is captured
+        // heli->renewImage(image);
 
-		// Copy to OpenCV Mat
-		// rawToMat(currentImage, image);
+        // Copy to OpenCV Mat
+        // rawToMat(currentImage, image);
         
 
         usleep(15000);
-	}
-	
-	// heli->land();
+    }
+    
+    // heli->land();
     SDL_JoystickClose(m_joystick);
     // delete heli;
-	//delete image;
-	return 0;
+    //delete image;
+    return 0;
 }
