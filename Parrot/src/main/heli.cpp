@@ -165,10 +165,12 @@ void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
             destinationImage.at<Vec3b>(y, x) = intensity;
 
         }
+
 }
 
-Mat bgr2yiq2(const Mat &sourceImage) {
-    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+void bgr2yiq2(const Mat &sourceImage, Mat &destinationImage) {
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
         for (int x = 0; x < sourceImage.cols; ++x) {
             // bgr to yiq conversion
@@ -188,7 +190,6 @@ Mat bgr2yiq2(const Mat &sourceImage) {
             destinationImage.at<Vec3b>(y, x) = intensity;
 
         }
-    return destinationImage;
 }
 
 // Convert CRawImage to Mat
@@ -285,7 +286,7 @@ void filterColorFromImage(const Mat &sourceImage, Mat &destinationImage) {
 
 int main(int argc,char* argv[])
 {
-    VideoCapture cap(1); // open the default camera
+    VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
     //establishing connection with the quadcopter
@@ -400,7 +401,7 @@ int main(int argc,char* argv[])
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
         imshow("Our YIQ", yiqOurImage);
 
-        Mat yiqOurImage2 = bgr2yiq2(currentImage);
+        Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
         imshow("YIQ2", yiqOurImage2);
 
         //BGR to HSV
