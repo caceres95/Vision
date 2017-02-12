@@ -217,7 +217,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
         case CV_EVENT_LBUTTONDOWN: //CLICK
             Px=x;
             Py=y;
-<<<<<<< HEAD
+
             destination = (uchar*) imagenClick.ptr<uchar>(Py);
             vB=destination[Px * 3];
             vG=destination[Px*3+1];
@@ -226,13 +226,7 @@ void mouseCoordinatesExampleCallback(int event, int x, int y, int flags, void* p
 	    vC2=vG;
 	    vC3=vR;
              points.push_back(Point(x, y));
-=======
-            destination = (uchar*) selectedImage.ptr<uchar>(Py);
-            vC1=destination[Px * 3];
-            vC2=destination[Px*3+1];
-            vC3=destination[Px*3+2];
-            points.push_back(Point(x, y));
->>>>>>> 0229b39e4cae8c6971344ac505a5f0f21f6b265a
+
             break;
         case CV_EVENT_MOUSEMOVE: //Desplazamiento de flecha
             break;
@@ -534,7 +528,7 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
-<<<<<<< HEAD
+
 	    case 'f':
 		//Funcion para congelar la imagen una vez el usuario oprima la tecla f
 		currentImage.copyTo(frozenImageBGR);
@@ -550,11 +544,11 @@ int main(int argc,char* argv[])
 
 		break;
 
-=======
+
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
->>>>>>> 0229b39e4cae8c6971344ac505a5f0f21f6b265a
+
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
         }
