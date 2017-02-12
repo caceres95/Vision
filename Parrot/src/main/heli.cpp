@@ -30,6 +30,8 @@ bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
 string ultimo = "init";
+unsigned char luminositySlider;
+
 
 int Px;
 int Py;
@@ -42,6 +44,10 @@ Mat imagenClick;
 Mat frozenImageBGR;
 Mat frozenImageYIQ;
 Mat frozenImageHSV;
+//Matriz donde se guardara la imagen en blanco y negro
+Mat binarizedImage;
+
+
 
 Mat selectedImage;
 int selected = 1;
@@ -51,6 +57,36 @@ string canales = "RGB";
  * This method flips horizontally the sourceImage into destinationImage. Because it uses 
  * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
  */
+
+void binarizeImage (const Mat &sourceImage, Mat &destinationImage, unsigned char threshold)
+{
+	//Si la imagen de destino no esta inicializada, se inicializa con las caracteristicas de la matriz fuente
+	if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+    //Recorre todos los pixels de la matriz
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x)
+
+            	if(sourceImage.at<Vec3b>(y, x)[0]<threshold)
+            	{	
+            		//La luminosidad es menor al threshold, se pone en negro
+            		destinationImage.at<Vec3b>(y, x)[0] =0;
+            		destinationImage.at<Vec3b>(y, x)[1] =0;
+            		destinationImage.at<Vec3b>(y, x)[2] =0;
+            	}
+
+            	else 
+            	{
+            		//Se pone en blanco
+            		destinationImage.at<Vec3b>(y, x)[0] =255;
+            		destinationImage.at<Vec3b>(y, x)[1] =255;
+            		destinationImage.at<Vec3b>(y, x)[2] =255;
+            	}
+              
+}
+
+
 void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
 {
     if (destinationImage.empty())
@@ -83,7 +119,7 @@ void drawPolygonWithPoints() {
     }
 }
 
-Mat blackAndWhite(const Mat &sourceImage) {
+Mat grayScale(const Mat &sourceImage) {
     Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
         for (int x = 0; x < sourceImage.cols; ++x) {
@@ -256,6 +292,8 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
+	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
+
     cap >> currentImage;
     selectedImage = currentImage;
     while (stop == false)
@@ -313,11 +351,15 @@ int main(int argc,char* argv[])
         //imshow("Flipped", flipped);
 
         //BGR to Gray Scale
-        Mat blackWhite = blackAndWhite(currentImage);
+        Mat blackWhite = grayScale(currentImage);
         imshow("Black and White", blackWhite);
         IplImage* image = cvCreateImage(cvSize(currentImage.cols, currentImage.rows), 8, 3);
         IplImage ipltemp = currentImage;
         cvCopy(&ipltemp, image);
+
+        //BINARIZACION
+        binarizeImage(blackWhite,binarizedImage, luminositySlider);
+        imshow("Binarized Image",binarizedImage);
 
         //BGR to YIQ
         //Mat yiqImage(convertImageRGBtoYIQ(image));
