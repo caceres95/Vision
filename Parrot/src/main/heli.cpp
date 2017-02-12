@@ -14,6 +14,12 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <opencv/cv.h>
+#include <errno.h>
+#include <math.h>
+#include <opencv/highgui.h>
+
+
 using namespace std;
 using namespace cv;
 
@@ -119,15 +125,15 @@ void drawPolygonWithPoints() {
     }
 }
 
-Mat grayScale(const Mat &sourceImage) {
-    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+void grayScale(const Mat &sourceImage, Mat &destinationImage) {
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
         for (int x = 0; x < sourceImage.cols; ++x) {
             int value=sourceImage.at<Vec3b>(y, x)[0]*0.1+sourceImage.at<Vec3b>(y, x)[1]*0.3+sourceImage.at<Vec3b>(y, x)[2]*0.6;
             Vec3b intensity(value, value, value);
             destinationImage.at<Vec3b>(y, x) = intensity;
         }
-    return destinationImage;
 }
 
 // Matriz para convertir a YIQ
@@ -136,8 +142,10 @@ double yiqMat[3][3] = {
     {-0.332, -0.274, 0.596},
     {0.312, -0.523, 0.211}
 };
-Mat bgr2yiq(const Mat &sourceImage) {
-    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+
+void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     for (int y = 0; y < sourceImage.rows; ++y)
         for (int x = 0; x < sourceImage.cols; ++x) {
             // bgr to yiq conversion
@@ -157,8 +165,33 @@ Mat bgr2yiq(const Mat &sourceImage) {
             destinationImage.at<Vec3b>(y, x) = intensity;
 
         }
-    return destinationImage;
+
 }
+
+void bgr2yiq2(const Mat &sourceImage, Mat &destinationImage) {
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+    for (int y = 0; y < sourceImage.rows; ++y)
+        for (int x = 0; x < sourceImage.cols; ++x) {
+            // bgr to yiq conversion
+            double yiq[3];
+            for (int i=0;i<3;i++) {
+                yiq[i]=0;
+                for (int j=0;j<3;j++) {
+                    yiq[i] += yiqMat[i][j] * sourceImage.at<Vec3b>(y, x)[j];
+                }
+            }
+            // normalize values
+            yiq[0] = yiq[0]; // Y
+            yiq[1] = CV_CAST_8U((int)(yiq[1])); // I
+            yiq[2] = CV_CAST_8U((int)(yiq[2])); //Q
+
+            Vec3b intensity(yiq[2], yiq[1], yiq[0]);
+            destinationImage.at<Vec3b>(y, x) = intensity;
+
+        }
+}
+
 // Convert CRawImage to Mat
 void rawToMat( Mat &destImage, CRawImage* sourceImage)
 {   
@@ -229,8 +262,9 @@ void C3CoordinatesCallback(int event, int x, int y, int flags, void* param)
 }
 void on_trackbar( int, void* ){}
 
-Mat filterColorFromImage(const Mat &sourceImage) {
-    Mat destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
+void filterColorFromImage(const Mat &sourceImage, Mat &destinationImage) {
+    if (destinationImage.empty())
+        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
     Vec3b white(255, 255, 255);
     Vec3b black(0, 0, 0);
     for (int y = 0; y < sourceImage.rows; ++y)
@@ -248,7 +282,6 @@ Mat filterColorFromImage(const Mat &sourceImage) {
                 destinationImage.at<Vec3b>(y, x) = black;
             }
         }
-    return destinationImage;
 }
 
 int main(int argc,char* argv[])
@@ -352,7 +385,7 @@ int main(int argc,char* argv[])
         //imshow("Flipped", flipped);
 
         //BGR to Gray Scale
-        Mat blackWhite = grayScale(currentImage);
+        Mat blackWhite; grayScale(currentImage, blackWhite);
         imshow("Black and White", blackWhite);
         IplImage* image = cvCreateImage(cvSize(currentImage.cols, currentImage.rows), 8, 3);
         IplImage ipltemp = currentImage;
@@ -365,8 +398,11 @@ int main(int argc,char* argv[])
         //BGR to YIQ
         //Mat yiqImage(convertImageRGBtoYIQ(image));
         //imshow("YIQOther", yiqImage);
-        Mat yiqOurImage = bgr2yiq(currentImage);
+        Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
         imshow("Our YIQ", yiqOurImage);
+
+        Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
+        imshow("YIQ2", yiqOurImage2);
 
         //BGR to HSV
         Mat hsv;
@@ -464,7 +500,7 @@ int main(int argc,char* argv[])
         // Blur image
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
-        Mat filteredImage = filterColorFromImage(selectedImage);
+        Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
         // Applied flood fill to fill inner holes
         Mat im_floodfill = filteredImage.clone();
         floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
@@ -503,7 +539,7 @@ int main(int argc,char* argv[])
             imshow("Frozen Image in HSV", frozenImageHSV);
 
             //Congela una imagen en el modelo HSV
-            frozenImageYIQ=bgr2yiq(frozenImageBGR);
+            bgr2yiq(frozenImageBGR, frozenImageYIQ);
             imshow("Frozen Image in YIQ", frozenImageYIQ);
             break;
             case '1': selected=1; break;
