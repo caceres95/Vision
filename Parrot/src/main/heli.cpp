@@ -300,7 +300,7 @@ int main(int argc,char* argv[])
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
     // Destination OpenCV Mat   
-    Mat currentImage;// = Mat(240, 320, CV_8UC3);
+    Mat currentImage = Mat(240, 320, CV_8UC3);
     // Show it  
     //imshow("ParrotCam", currentImage);
 
