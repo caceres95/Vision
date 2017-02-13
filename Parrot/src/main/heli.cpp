@@ -383,7 +383,9 @@ int main(int argc,char* argv[])
         //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-        drawPolygonWithPoints();
+        // drawPolygonWithPoints();
+        // draw circle in last clicked point
+        if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
         Mat flipped;// = Mat(240, 320, CV_8UC3);
