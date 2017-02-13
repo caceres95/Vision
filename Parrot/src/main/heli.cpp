@@ -414,7 +414,7 @@ int main(int argc,char* argv[])
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
-            case 2: selectedImage = yiqOurImage2; canales="YIQ"; break;
+            case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
         }
         // Histogram
