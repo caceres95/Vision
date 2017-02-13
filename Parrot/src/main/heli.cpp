@@ -286,14 +286,14 @@ void filterColorFromImage(const Mat &sourceImage, Mat &destinationImage) {
 
 int main(int argc,char* argv[])
 {
-    VideoCapture cap(0); // open the default camera
-    if(!cap.isOpened())  // check if we succeeded
-        return -1;
-    //establishing connection with the quadcopter
-    // heli = new CHeli();
+    // VideoCapture cap(0); // open the default camera
+    // if(!cap.isOpened())  // check if we succeeded
+    //     return -1;
+    // establishing connection with the quadcopter
+    heli = new CHeli();
     
-    //this class holds the image from the drone 
-    // image = new CRawImage(320,240);
+    // this class holds the image from the drone 
+    image = new CRawImage(320,240);
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
@@ -328,7 +328,13 @@ int main(int argc,char* argv[])
 
 	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
 
-    cap >> currentImage;
+    // cap >> currentImage;
+
+    // image is captured
+    heli->renewImage(image);
+
+    // Copy to OpenCV Mat
+    rawToMat(currentImage, image);
     selectedImage = currentImage;
     while (stop == false)
     {
@@ -366,15 +372,15 @@ int main(int argc,char* argv[])
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        cap >> currentImage;
+        // cap >> currentImage;
 
-        resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
+        // resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
         imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
         textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
-    //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         drawPolygonWithPoints();
@@ -387,19 +393,14 @@ int main(int argc,char* argv[])
         //BGR to Gray Scale
         Mat blackWhite; grayScale(currentImage, blackWhite);
         imshow("Black and White", blackWhite);
-        IplImage* image = cvCreateImage(cvSize(currentImage.cols, currentImage.rows), 8, 3);
-        IplImage ipltemp = currentImage;
-        cvCopy(&ipltemp, image);
 
         //BINARIZACION
         binarizeImage(blackWhite,binarizedImage, luminositySlider);
         imshow("Binarized Image",binarizedImage);
 
         //BGR to YIQ
-        //Mat yiqImage(convertImageRGBtoYIQ(image));
-        //imshow("YIQOther", yiqImage);
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-        imshow("Our YIQ", yiqOurImage);
+        imshow("YIQ", yiqOurImage);
 
         Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
         imshow("YIQ2", yiqOurImage2);
@@ -411,7 +412,7 @@ int main(int argc,char* argv[])
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
-            case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
+            case 2: selectedImage = yiqOurImage2; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
         }
         // Histogram
@@ -518,12 +519,12 @@ int main(int argc,char* argv[])
             case 'd': yaw = 20000.0; break;
             case 'w': height = -20000.0; break;
             case 's': height = 20000.0; break;
-            // case 'q': heli->takeoff(); break;
-            // case 'e': heli->land(); break;
-            // case 'z': heli->switchCamera(0); break;
-            // case 'x': heli->switchCamera(1); break;
-            // case 'c': heli->switchCamera(2); break;
-            // case 'v': heli->switchCamera(3); break;
+            case 'q': heli->takeoff(); break;
+            case 'e': heli->land(); break;
+            case 'z': heli->switchCamera(0); break;
+            case 'x': heli->switchCamera(1); break;
+            case 'c': heli->switchCamera(2); break;
+            case 'v': heli->switchCamera(3); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
             case 'i': pitch = -20000.0; break;
@@ -550,39 +551,39 @@ int main(int argc,char* argv[])
             default: pitch = roll = yaw = height = 0.0;
         }
  
-        // if (joypadTakeOff) {
-        //     heli->takeoff();
-        // }
-        // if (joypadLand) {
-        //     heli->land();
-        // }
-        //hover = joypadHover ? 1 : 0;
+        if (joypadTakeOff) {
+            heli->takeoff();
+        }
+        if (joypadLand) {
+            heli->land();
+        }
+        hover = joypadHover ? 1 : 0;
 
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            // heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
+            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
         else
         {
-            // heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
     
-        //image is captured
-        // heli->renewImage(image);
+        // image is captured
+        heli->renewImage(image);
 
         // Copy to OpenCV Mat
-        // rawToMat(currentImage, image);
+        rawToMat(currentImage, image);
         
 
         usleep(15000);
     }
     
-    // heli->land();
+    heli->land();
     SDL_JoystickClose(m_joystick);
-    // delete heli;
-    //delete image;
+    delete heli;
+    delete image;
     return 0;
 }
