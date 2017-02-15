@@ -377,7 +377,8 @@ int main(int argc,char* argv[])
     //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-        drawPolygonWithPoints();
+        // drawPolygonWithPoints();
+        if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
         Mat flipped;// = Mat(240, 320, CV_8UC3);
@@ -399,7 +400,7 @@ int main(int argc,char* argv[])
         //Mat yiqImage(convertImageRGBtoYIQ(image));
         //imshow("YIQOther", yiqImage);
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-        imshow("Our YIQ", yiqOurImage);
+        imshow("YIQ1", yiqOurImage);
 
         Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
         imshow("YIQ2", yiqOurImage2);
@@ -413,6 +414,7 @@ int main(int argc,char* argv[])
             case 1: selectedImage = currentImage; canales="RGB"; break;
             case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
+            case 4: selectedImage = yiqOurImage2; canales = "YIQ2"; break;
         }
         // Histogram
         vector<Mat> bgr_planes;
@@ -501,15 +503,15 @@ int main(int argc,char* argv[])
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        // Applied flood fill to fill inner holes
-        Mat im_floodfill = filteredImage.clone();
-        floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
-        // Invert floodfilled image
-        Mat im_floodfill_inv;
-        bitwise_not(im_floodfill, im_floodfill_inv);
+        // // Applied flood fill to fill inner holes
+        // Mat im_floodfill = filteredImage.clone();
+        // floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
+        // // Invert floodfilled image
+        // Mat im_floodfill_inv;
+        // bitwise_not(im_floodfill, im_floodfill_inv);
          
-        // Combine the two images to get the foreground.
-        filteredImage = (filteredImage | im_floodfill_inv);
+        // // Combine the two images to get the foreground.
+        // filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
 
         char key = waitKey(5);
@@ -545,6 +547,7 @@ int main(int argc,char* argv[])
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
+            case '4': selected=4; break;
 
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
