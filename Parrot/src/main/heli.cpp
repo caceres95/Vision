@@ -300,7 +300,7 @@ int main(int argc,char* argv[])
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
     // Destination OpenCV Mat   
-    Mat currentImage;// = Mat(240, 320, CV_8UC3);
+    Mat currentImage = Mat(240, 320, CV_8UC3);
     // Show it  
     //imshow("ParrotCam", currentImage);
 
@@ -414,8 +414,9 @@ int main(int argc,char* argv[])
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
-            case 2: selectedImage = yiqOurImage2; canales="YIQ"; break;
+            case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
+            case 4: selectedImage = yiqOurImage2; canales="YIQ2"; break;
         }
         // Histogram
         vector<Mat> bgr_planes;
@@ -504,15 +505,15 @@ int main(int argc,char* argv[])
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        // Applied flood fill to fill inner holes
-        Mat im_floodfill = filteredImage.clone();
-        floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
-        // Invert floodfilled image
-        Mat im_floodfill_inv;
-        bitwise_not(im_floodfill, im_floodfill_inv);
+        // // Applied flood fill to fill inner holes
+        // Mat im_floodfill = filteredImage.clone();
+        // floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
+        // // Invert floodfilled image
+        // Mat im_floodfill_inv;
+        // bitwise_not(im_floodfill, im_floodfill_inv);
          
-        // Combine the two images to get the foreground.
-        filteredImage = (filteredImage | im_floodfill_inv);
+        // // Combine the two images to get the foreground.
+        // filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
 
         char key = waitKey(5);
@@ -548,6 +549,7 @@ int main(int argc,char* argv[])
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
+            case '4': selected=4; break;
 
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
