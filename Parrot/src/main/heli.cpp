@@ -21,11 +21,20 @@
 #include <errno.h>
 #include <math.h>
 #include <opencv/highgui.h>
+#include <string>
 
 
 using namespace std;
 using namespace cv;
 
+#include <sstream>
+
+string IntToString (int a)
+{
+    ostringstream temp;
+    temp<<a;
+    return temp.str();
+}
 // Here we will store points
 vector<Point> points;
 bool stop = false;
@@ -539,6 +548,8 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
 {
 	//Si la imagen de destino ests vacia, se crea una nueva con las caracteristicas
 	//de la imagen binarizada
+
+    ofstream outputFile("program3data.txt");
 	if (segmentedImage.empty())
 	segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
 	
@@ -558,7 +569,8 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
     Vec3b white(255, 255, 255);
     Vec3b black(0, 0, 0);
 	
-	int i,j,k; //Variables auxiliares
+	int i,j; //Variables auxiliares
+    unsigned k;
 	unsigned int id=0; //Identificador de cada region
 	Vec3b regionColor(0,0,0); //Esta variable servira para agregar un color random a la region
 	unsigned char red,green,blue;
@@ -604,8 +616,8 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
 	}
 
 
-	for (int i = 0; i < binarizedImage.rows; i++)
-    	for (int j = 1; j < binarizedImage.cols; j++){
+	for (int i = 1; i < binarizedImage.rows-1; i++)
+    	for (int j = 1; j < binarizedImage.cols-1; j++){
 
     		//Para este algoritmo se presentan varios caso, primero el algoritmo encuentra un uno
     		if(binarizedImage.at<Vec3b>(i,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j)[1] == 255 && binarizedImage.at<Vec3b>(i,j)[2] == 255){
@@ -615,6 +627,8 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
     				
     				//Guardamos el id para posteriormente colorearlo
     				idImage[i][j] = id;
+
+
     				
     				//El elemento id tendra un valor de region color
     				
@@ -650,9 +664,13 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
     			}
 
     			//Propagacion indistinta
-    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j-1)[0] == 255){
+    			else if (binarizedImage.at<Vec3b>(i-1,j) != black && binarizedImage.at<Vec3b>(i,j-1) != black){
+
     			  	
-    				idImage[i][j]=idImage[i-1][j];
+                    outputFile <<"\nAnalizando ["<<IntToString(i)<<"]["<<IntToString(j)<<"]\nPixel idImage["<<IntToString(i-1)<<"]["<<IntToString(j)<<"]="<<IntToString(idImage[i-1][j])<<" es True y pixel ["<<IntToString(i)<<"]["<<IntToString(j-1)<<"]="<<IntToString(idImage[i][j-1])<<" es True\n";
+    				//Propagacon lateral idImage[i][j]=idImage[i][j-1];
+                    idImage[i][j]=idImage[i-1][j];
+
 
     				/*
     				//Ahora el color del pixel superior va a ser igual al color del pixel actual,
@@ -665,10 +683,26 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
 
 					//Cambiamos por borrar ese ID de la table
 
-    				idTableV0[idImage[i][j-1]]=idTableV0[idImage[i-1][j]];
-					idTableV1[idImage[i][j-1]]=idTableV1[idImage[i-1][j]];
-					idTableV2[idImage[i][j-1]]=idTableV2[idImage[i-1][j]];
 
+                    outputFile <<"El color actual IDTable del pixel ["<<IntToString(i)<<"]["<<IntToString(j-1)<<"] lateral es ="<<IntToString(idTableV0[idImage[i][j-1]])<<"/"<<IntToString(idTableV1[idImage[i][j-1]])<<"/"<<IntToString(idTableV2[idImage[i][j-1]])<<"\n";
+    				
+                    //Todos los segmentos que tengan el color del pixel superior deben ser cambiados y poner el color del pixel lateral
+
+                    for(k=0; k<id+1 ; k++){
+
+                        if(idTableV0[k]==idTableV0[idImage[i][j-1]] && idTableV1[k]==idTableV1[idImage[i][j-1]] && idTableV2[k]==idTableV2[idImage[i][j-1]])
+                        {
+                            idTableV0[k]=idTableV0[idImage[i-1][j]];
+                            idTableV1[k]=idTableV1[idImage[i-1][j]];
+                            idTableV2[k]=idTableV2[idImage[i-1][j]];
+                        }
+                    }
+                    /*
+                    idTableV0[idImage[i][j-1]]=idTableV0[idImage[i-1][j]];
+					idTableV1[idImage[i][j-1]]=idTableV1[idImage[i-1][j]];
+					idTableV2[idImage[i][j-1]]=idTableV2[idImage[i-1][j]];*/
+                    outputFile <<"El color actual IDTable del pixel ["<<IntToString(i-1)<<"]["<<IntToString(j)<<"] superior es ="<<IntToString(idTableV0[idImage[i-1][j]])<<"/"<<IntToString(idTableV1[idImage[i-1][j]])<<"/"<<IntToString(idTableV2[idImage[i-1][j]])<<"\n";
+                    outputFile <<"El color nuevo IDTable del pixel lateral es ="<<IntToString(idTableV0[idImage[i][j-1]])<<"/"<<IntToString(idTableV1[idImage[i][j-1]])<<"/"<<IntToString(idTableV2[idImage[i][j-1]])<<"\n";
 
     				
 /*
@@ -693,6 +727,30 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
     	}	
 
     	//Ahora coloreamos la imagen con la tabla de ID y la matriz de IDs que generamos
+
+        
+
+        for (int i = 0; i < binarizedImage.rows; i++){
+            for (int j = 0; j < binarizedImage.cols; j++){
+
+                outputFile << IntToString(idImage[i][j])<<"\t";
+            }
+
+            outputFile << "\n";
+        }
+
+
+        for (int i = 0; i <= id; i++){
+        
+
+                outputFile << "\nID: "<<IntToString(i)<<" "<<IntToString(idTableV0[i])<<" "<<IntToString(idTableV1[i])<<" "<<IntToString(idTableV2[i])<<" ";
+
+            
+
+            outputFile << "\n";
+        }
+
+
 
     	for (int i = 0; i < binarizedImage.rows; i++)
     		for (int j = 0; j < binarizedImage.cols; j++){
@@ -774,6 +832,11 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
     	}
     	*/
     //IMPRMIR ID MATRIX
+    //...
+
+
+//outputFile << IntToString(idImage[0][0])<<"\t"<<IntToString(idTableV0[1]);
+//... 
 
 
 
@@ -782,6 +845,26 @@ void segment2( Mat &binarizedImage, Mat &segmentedImage)
 
 int main(int argc,char* argv[])
 {
+
+	Mat imageTest;
+    imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    Mat imageTestSeg;
+
+    if(! imageTest.data )                              // Check for invalid input
+    {
+        cout <<  "Could not open or find the image" << std::endl ;
+        return -1;
+    }
+
+    namedWindow( "Display window" );// Create a window for display.
+    segment2(imageTest,imageTestSeg);
+
+
+    imshow( "Display window", imageTestSeg );
+
+
+    imwrite( "Gray_Image.bmp", imageTestSeg );
+
 	Vec3b aux(111,222,255);
 	map<unsigned int,Vec3b> idTable;
 	
