@@ -47,9 +47,6 @@ SDL_Joystick* m_joystick;
 bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
-string ultimo = "init";
-unsigned char luminositySlider;
-
 
 int Px;
 int Py;
@@ -71,83 +68,6 @@ Mat segmentedImg;
 Mat selectedImage;
 int selected = 1;
 string canales = "RGB";
-
-/*
- * This method flips horizontally the sourceImage into destinationImage. Because it uses 
- * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
- */
-
-void binarizeImage (const Mat &sourceImage, Mat &destinationImage, unsigned char threshold)
-{
-	//Si la imagen de destino no esta inicializada, se inicializa con las caracteristicas de la matriz fuente
-	if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    //Recorre todos los pixels de la matriz
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x)
-
-            	if(sourceImage.at<Vec3b>(y, x)[0]<threshold)
-            	{	
-            		//La luminosidad es menor al threshold, se pone en negro
-            		destinationImage.at<Vec3b>(y, x)[0] =0;
-            		destinationImage.at<Vec3b>(y, x)[1] =0;
-            		destinationImage.at<Vec3b>(y, x)[2] =0;
-            	}
-
-            	else 
-            	{
-            		//Se pone en blanco
-            		destinationImage.at<Vec3b>(y, x)[0] =255;
-            		destinationImage.at<Vec3b>(y, x)[1] =255;
-            		destinationImage.at<Vec3b>(y, x)[2] =255;
-            	}
-              
-}
-
-
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
-{
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols / 2; ++x)
-            for (int i = 0; i < sourceImage.channels(); ++i)
-            {
-                destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
-                destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
-            }
-}
-
-void drawPolygonWithPoints() {
-    if (imagenClick.data) {
-        int thickness=2;
-        int lineType=8;
-        int previous=0;
-        Scalar color=Scalar( 0, 0, 255 );
-     /* Draw all points */
-        for (int current = 0; current < (int) points.size(); ++current) {
-            circle(imagenClick, (Point)points[current], 5, color, CV_FILLED);
-            if (current>0) {
-                line( imagenClick, points[previous],points[current],color,thickness,lineType);
-                previous++;
-            }
-
-        }
-    }
-}
-
-void grayScale(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            int value=sourceImage.at<Vec3b>(y, x)[0]*0.1+sourceImage.at<Vec3b>(y, x)[1]*0.3+sourceImage.at<Vec3b>(y, x)[2]*0.6;
-            Vec3b intensity(value, value, value);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-        }
-}
 
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
@@ -179,30 +99,6 @@ void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
 
         }
 
-}
-
-void bgr2yiq2(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            // bgr to yiq conversion
-            double yiq[3];
-            for (int i=0;i<3;i++) {
-                yiq[i]=0;
-                for (int j=0;j<3;j++) {
-                    yiq[i] += yiqMat[i][j] * sourceImage.at<Vec3b>(y, x)[j];
-                }
-            }
-            // normalize values
-            yiq[0] = yiq[0]; // Y
-            yiq[1] = CV_CAST_8U((int)(yiq[1])); // I
-            yiq[2] = CV_CAST_8U((int)(yiq[2])); //Q
-
-            Vec3b intensity(yiq[2], yiq[1], yiq[0]);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-
-        }
 }
 
 // Convert CRawImage to Mat
@@ -940,15 +836,8 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
-	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
+    cap >> currentImage;
 
-    // cap >> currentImage;
-
-    // image is captured
-    heli->renewImage(image);
-
-    // Copy to OpenCV Mat
-    rawToMat(currentImage, image);
     selectedImage = currentImage;
     while (stop == false)
     {
@@ -991,8 +880,9 @@ int main(int argc,char* argv[])
 
         // cap >> currentImage;
 
-        // resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-        imshow("ParrotCam", currentImage);
+
+        resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
+        // imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -1001,41 +891,23 @@ int main(int argc,char* argv[])
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         // drawPolygonWithPoints();
-        // draw circle in last clicked point
+
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
-        Mat flipped;// = Mat(240, 320, CV_8UC3);
-        flipImageBasic(currentImage, flipped);
-        //imshow("Flipped", flipped);
-
-        //BGR to Gray Scale
-        Mat blackWhite; grayScale(currentImage, blackWhite);
-        imshow("Black and White", blackWhite);
-
-        //BINARIZACION
-        binarizeImage(blackWhite,binarizedImage, luminositySlider);
-        imshow("Binarized Image",binarizedImage);
-
-
-
         //BGR to YIQ
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-        imshow("YIQ", yiqOurImage);
 
-        Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
-        imshow("YIQ2", yiqOurImage2);
+        // imshow("YIQ1", yiqOurImage);
 
         //BGR to HSV
-        Mat hsv;
-        cvtColor(currentImage, hsv, CV_BGR2HSV);
-        imshow("HSV", hsv);
+        Mat hsv; cvtColor(currentImage, hsv, CV_BGR2HSV);
+        // imshow("HSV", hsv);
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
             case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
-            case 4: selectedImage = yiqOurImage2; canales="YIQ2"; break;
         }
         // Histogram
         vector<Mat> bgr_planes;
@@ -1124,15 +996,6 @@ int main(int argc,char* argv[])
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        // // Applied flood fill to fill inner holes
-        // Mat im_floodfill = filteredImage.clone();
-        // floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
-        // // Invert floodfilled image
-        // Mat im_floodfill_inv;
-        // bitwise_not(im_floodfill, im_floodfill_inv);
-         
-        // // Combine the two images to get the foreground.
-        // filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
                 //Probamos segmentacion
         segment2(filteredImage,segmentedImg);
@@ -1155,23 +1018,10 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
-            case 'f':
-            //Funcion para congelar la imagen una vez el usuario oprima la tecla f
-            currentImage.copyTo(frozenImageBGR);
-            imshow("Frozen Image", frozenImageBGR);
 
-            //Congela una imagen en el modelo HSV
-            cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
-            imshow("Frozen Image in HSV", frozenImageHSV);
-
-            //Congela una imagen en el modelo HSV
-            bgr2yiq(frozenImageBGR, frozenImageYIQ);
-            imshow("Frozen Image in YIQ", frozenImageYIQ);
-            break;
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
-            case '4': selected=4; break;
 
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
