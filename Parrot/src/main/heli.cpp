@@ -63,6 +63,202 @@ double yiqMat[3][3] = {
     {0.312, -0.523, 0.211}
 };
 
+// segmentation code
+#define PI 3.14159265
+
+class Pix{
+public:
+    long long int x, y;
+    int val;
+    int color;
+};
+
+class Blob{
+public:
+
+    vector<Pix> elements;
+    long long int area() {return (long long int) elements.size();}
+    int color;
+    long long int m00, m01, m02, m10, m20, m11;
+    double x_centroid, y_centroid;
+    double M00, M02, M20, M11;
+    double n20, n02, n11;
+    double phi1, phi2;
+    double theta;
+};
+
+void stat_moments(Blob &obj){
+    obj.m00 = obj.area();
+    obj.m10 = 0;
+    obj.m01 = 0;
+    obj.m20 = 0;
+    obj.m02 = 0;
+    obj.m11 = 0;
+    for (long long int i = 0; i < obj.elements.size(); i++){
+        obj.m10 += obj.elements[i].x;
+        obj.m01 += obj.elements[i].y;
+        obj.m20 += (obj.elements[i].x * obj.elements[i].x);
+        obj.m02 += (obj.elements[i].y * obj.elements[i].y);
+        obj.m11 += (obj.elements[i].x * obj.elements[i].y); 
+    }
+    obj.x_centroid = (double) obj.m10/obj.m00;
+    obj.y_centroid = (double) obj.m01/obj.m00;
+}
+
+void central_moments(Blob &obj){
+    obj.M00 = obj.m00;
+    obj.M02 = obj.m02 - (obj.y_centroid*obj.m01);
+    obj.M20 = obj.m20 - (obj.x_centroid*obj.m10);
+    obj.M11 = obj.m11 - (obj.x_centroid*obj.m01);
+}
+
+void invariant_moments(Blob &obj){
+    obj.n20 = obj.M20/(obj.M00*obj.M00);
+    obj.n02 = obj.M02/(obj.M00*obj.M00);
+    obj.n11 = obj.M11;
+
+    obj.phi1 = obj.n20 + obj.n02;
+    obj.phi2 = (obj.n20 - obj.n02)*(obj.n20 - obj.n02) + (4*obj.n11*obj.n11);
+
+    obj.theta = 0.5*atan2(2*obj.M11, obj.M20 - obj.M02);        
+}
+
+void mergeRegions(vector<Blob> &region_vec, int index_1, int index_2, Mat &blobTemp){
+    Blob *masterBlob, *slaveBlob;
+    Pix masterPix, slavePix;
+
+    masterBlob = &region_vec[index_2];
+    slaveBlob = &region_vec[index_1];
+
+    masterPix = masterBlob->elements.back();
+
+    for(int i = 0; i < slaveBlob->elements.size(); i++){
+        slavePix = slaveBlob->elements[i];
+        masterBlob->elements.push_back(slavePix);
+        blobTemp.at<ushort>(slavePix.y,slavePix.x) = (ushort) masterPix.color;
+    }
+    slaveBlob->elements.clear();
+    slaveBlob->color = 0;
+}
+
+void blobColoring (Mat &sourceImage){
+
+    Mat colorImg(sourceImage.rows, sourceImage.cols, CV_8UC3, Scalar::all(0));
+    Blob blob, *ptr2blob;
+    Pix pc, pi, ps;
+    Mat blobTemp(sourceImage.rows, sourceImage.cols, CV_16UC1, Scalar::all(0));
+
+    vector<Blob> regions, segments;
+
+    int color; 
+    int numofReg = 0;
+
+    cout << "Size img: " << sourceImage.rows << " x " << sourceImage.cols << endl;
+    cout << "No. Pixels: " << sourceImage.rows*sourceImage.cols << endl;
+
+    for (long long int y = 1; y < sourceImage.rows; y++){
+
+        for (long long int x = 1; x < sourceImage.cols; x++){
+
+            pc.x = x; pc.y = y;
+            pc.val = (int) sourceImage.at<uchar>(y,x);
+
+            pi.x = x-1; pi.y = y;
+            pi.color = (int) blobTemp.at<ushort>(y,x-1);
+
+            ps.x = x; ps.y = y-1;
+            ps.color = (int) blobTemp.at<ushort>(y-1,x);
+
+            if(pc.val == 0) {}
+            else{
+                if(pi.color == 0 && ps.color == 0){
+                    color = (int) regions.size() + 1;
+                    pc.color = color;
+                    blob.elements.push_back(pc);
+                    blob.color = color;
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                    regions.push_back(blob);
+                    blob.elements.clear();
+                }
+                else if (pi.color != 0 && ps.color == 0){
+                    pc.color = pi.color;
+                    ptr2blob = &regions[pc.color-1];
+                    (*ptr2blob).elements.push_back(pc);
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                }
+                else if (pi.color == 0 && ps.color != 0){
+                    pc.color = ps.color;
+                    ptr2blob = &regions[pc.color-1];
+                    (*ptr2blob).elements.push_back(pc);
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                }
+                else if (pi.color != 0 && ps.color != 0){
+                        pc.color = ps.color;
+                        ptr2blob = &regions[pc.color-1];
+                        (*ptr2blob).elements.push_back(pc);
+                        blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+
+                    if (pi.color != ps.color){
+                        mergeRegions(regions, pi.color-1, ps.color-1, blobTemp);
+                    }
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < regions.size(); i++){
+        if (regions[i].color != 0){
+            segments.push_back(regions[i]);
+        }
+    }
+
+    for (int i = 0; i < segments.size(); i++){
+        segments[i].color = i;  
+        uchar b = (uchar) rand() % 256;
+        uchar g = (uchar) rand() % 256;
+        uchar r = (uchar) rand() % 256;
+
+        for (int j = 0; j < segments[i].elements.size(); j++){
+            Vec3b & color = colorImg.at<Vec3b>(segments[i].elements[j].y,segments[i].elements[j].x);
+            color[0] = b;
+            color[1] = g;
+            color[2] = r;
+        }
+    }
+
+    cout << "Number of regions: " << segments.size() << endl;
+    for (int i=0; i<segments.size(); i++){
+        stat_moments(segments[i]);
+        central_moments(segments[i]);
+        invariant_moments(segments[i]);
+
+        cout << setprecision(2) << fixed;
+        cout << "Area: " << i << " " << segments[i].area() << " ";
+        cout << "m00: " << segments[i].m00 << " ";
+        cout << "m01: " << segments[i].m01 << " ";
+        cout << "m10: " << segments[i].m10 << " ";
+        cout << "m02: " << segments[i].m02 << " ";
+        cout << "m20: " << segments[i].m20 << " ";
+        cout << "m11: " << segments[i].m11 << " ";
+        cout << "X Centroid: " << segments[i].x_centroid << " ";
+        cout << "Y Centroid " << segments[i].y_centroid << endl;
+        cout << "M00: " << segments[i].M00 << " ";
+        cout << "M02: " << segments[i].M02 << " ";
+        cout << "M20: " << segments[i].M20 << " ";
+        cout << "M11: " << segments[i].M11 << endl;
+        cout << "n02: " << segments[i].n02 << " ";
+        cout << "n20: " << segments[i].n20 << " ";
+        cout << "n11: " << segments[i].n11 << endl;
+        cout << "phi1: " << segments[i].phi1 << " ";
+        cout << "phi2: " << segments[i].phi2 << " ";
+        cout << "theta: " << segments[i].theta * 180/PI << endl << endl;
+        // cout << segments[i].phi1 << "," << segments[i].phi2 << endl;
+
+    }
+
+    imshow( "Color image", colorImg );
+}
+
 void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
     if (destinationImage.empty())
         destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
