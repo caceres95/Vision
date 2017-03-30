@@ -13,16 +13,28 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <iostream>
+#include <time.h>       /* time */
+#include <map>
+#include <fstream>
 
 #include <opencv/cv.h>
 #include <errno.h>
 #include <math.h>
 #include <opencv/highgui.h>
+#include <string>
 
 
 using namespace std;
 using namespace cv;
 
+#include <sstream>
+
+string IntToString (int a)
+{
+    ostringstream temp;
+    temp<<a;
+    return temp.str();
+}
 // Here we will store points
 vector<Point> points;
 bool stop = false;
@@ -35,9 +47,6 @@ SDL_Joystick* m_joystick;
 bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
-string ultimo = "init";
-unsigned char luminositySlider;
-
 
 int Px;
 int Py;
@@ -52,89 +61,13 @@ Mat frozenImageYIQ;
 Mat frozenImageHSV;
 //Matriz donde se guardara la imagen en blanco y negro
 Mat binarizedImage;
+Mat segmentedImg;
 
 
 
 Mat selectedImage;
 int selected = 1;
 string canales = "RGB";
-
-/*
- * This method flips horizontally the sourceImage into destinationImage. Because it uses 
- * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
- */
-
-void binarizeImage (const Mat &sourceImage, Mat &destinationImage, unsigned char threshold)
-{
-	//Si la imagen de destino no esta inicializada, se inicializa con las caracteristicas de la matriz fuente
-	if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    //Recorre todos los pixels de la matriz
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x)
-
-            	if(sourceImage.at<Vec3b>(y, x)[0]<threshold)
-            	{	
-            		//La luminosidad es menor al threshold, se pone en negro
-            		destinationImage.at<Vec3b>(y, x)[0] =0;
-            		destinationImage.at<Vec3b>(y, x)[1] =0;
-            		destinationImage.at<Vec3b>(y, x)[2] =0;
-            	}
-
-            	else 
-            	{
-            		//Se pone en blanco
-            		destinationImage.at<Vec3b>(y, x)[0] =255;
-            		destinationImage.at<Vec3b>(y, x)[1] =255;
-            		destinationImage.at<Vec3b>(y, x)[2] =255;
-            	}
-              
-}
-
-
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
-{
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols / 2; ++x)
-            for (int i = 0; i < sourceImage.channels(); ++i)
-            {
-                destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
-                destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
-            }
-}
-
-void drawPolygonWithPoints() {
-    if (imagenClick.data) {
-        int thickness=2;
-        int lineType=8;
-        int previous=0;
-        Scalar color=Scalar( 0, 0, 255 );
-     /* Draw all points */
-        for (int current = 0; current < (int) points.size(); ++current) {
-            circle(imagenClick, (Point)points[current], 5, color, CV_FILLED);
-            if (current>0) {
-                line( imagenClick, points[previous],points[current],color,thickness,lineType);
-                previous++;
-            }
-
-        }
-    }
-}
-
-void grayScale(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            int value=sourceImage.at<Vec3b>(y, x)[0]*0.1+sourceImage.at<Vec3b>(y, x)[1]*0.3+sourceImage.at<Vec3b>(y, x)[2]*0.6;
-            Vec3b intensity(value, value, value);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-        }
-}
 
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
@@ -166,30 +99,6 @@ void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
 
         }
 
-}
-
-void bgr2yiq2(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            // bgr to yiq conversion
-            double yiq[3];
-            for (int i=0;i<3;i++) {
-                yiq[i]=0;
-                for (int j=0;j<3;j++) {
-                    yiq[i] += yiqMat[i][j] * sourceImage.at<Vec3b>(y, x)[j];
-                }
-            }
-            // normalize values
-            yiq[0] = yiq[0]; // Y
-            yiq[1] = CV_CAST_8U((int)(yiq[1])); // I
-            yiq[2] = CV_CAST_8U((int)(yiq[2])); //Q
-
-            Vec3b intensity(yiq[2], yiq[1], yiq[0]);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-
-        }
 }
 
 // Convert CRawImage to Mat
@@ -284,8 +193,609 @@ void filterColorFromImage(const Mat &sourceImage, Mat &destinationImage) {
         }
 }
 
+//Retorna un numero random
+int randomNumber(int min, int max) //range : [min, max)
+{
+   static bool first = true;
+   if ( first ) 
+   {  
+      srand(time(NULL)); //seeding for the first time only!
+      first = false;
+   }
+   return min + rand() % (max - min);
+}
+
+/*
+	SEGMENTACION
+	Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
+	la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
+	con los identificadores de cada segmento
+
+
+*/
+
+
+void segment(const Mat &binarizedImage, Mat &segmentedImage)
+{
+	//Si la imagen de destino ests vacia, se crea una nueva con las caracteristicas
+	//de la imagen binarizada
+	if (segmentedImage.empty())
+	segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
+	
+	//Esta matriz contendra los ID's de cada segmento
+	unsigned int idImage[binarizedImage.rows][binarizedImage.cols];
+
+	
+	/*
+
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+
+    for (int y = 0; y < binarizedImage.rows; ++y)
+        for (int x = 0; x < binarizedImage.cols; ++x){
+
+        	if(binarizedImage.at<Vec3b>(y,x)==white){
+        		segmentedImage.at<Vec3b>(y, x) = black;
+        	}
+        	else {
+        		segmentedImage.at<Vec3b>(y, x) = white;
+        	}
+        }
+    */
+	//Nuestra tala identificadora de regiones
+	map<unsigned int,Vec3b> idTable;
+	//idTable.insert(make_pair("1", Vec3b(1,2,3)));
+
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+	
+	int i,j,k; //Variables auxiliares
+	unsigned int id=0; //Identificador de cada region
+	Vec3b regionColor(0,0,0); //Esta variable servira para agregar un color random a la region
+	unsigned char red,green,blue;
+
+	//Comenzamos con la region 0, la cual sera la que no tenga ningun color
+	idTable.insert(make_pair(id, regionColor));
+
+	id=1; 
+
+	for (int i = 0; i < binarizedImage.rows; i++){
+    	for (int j = 0; j < binarizedImage.cols; j++){
+    		idImage[i][j]=0;
+    	}
+	}
+
+
+
+	for (int i = 0; i < binarizedImage.rows; i++)
+    	for (int j = 1; j < binarizedImage.cols; j++){
+
+    		//Para este algoritmo se presentan varios caso, primero el algoritmo encuentra un uno
+    		if(binarizedImage.at<Vec3b>(i,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j)[1] == 255 && binarizedImage.at<Vec3b>(i,j)[2] == 255){
+
+    			//Acabamos de encontrar una semilla
+    			if(binarizedImage.at<Vec3b>(i-1,j)[0] == 0 && binarizedImage.at<Vec3b>(i,j-1)[0] == 0){
+    				
+    				//Guardamos el id para posteriormente colorearlo
+    				idImage[i][j] = id;
+    				
+    				//El elemento id tendra un valor de region color
+    				
+    				//Generamos un color aleatorio para colorear la region
+    				regionColor.val[0]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[1]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[2]=(unsigned char) randomNumber(0,255);
+
+    				idTable.insert(make_pair(idImage[i][j], regionColor));
+
+    				//Incrementamos el id para la proxima region
+    				id++;
+
+
+    			}
+
+    			//Propagacion descendiente
+    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j-1)[0]  == 0){
+
+    				idImage[i][j]=idImage[i-1][j];
+    
+    			}
+
+    			//Propagacion lateral
+    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 0 && binarizedImage.at<Vec3b>(i,j-1)[0] == 255){
+
+    				idImage[i][j]=idImage[i][j-1];
+ 
+    			}
+
+    			//Propagacion indistinta
+    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j-1)[0] == 255){
+    			  	
+    				idImage[i][j]=idImage[i][j-1];
+
+    				/*
+    				//Ahora el color del pixel superior va a ser igual al color del pixel actual,
+    				//porque somos la misma region
+    				idTable[idImage[i-1][j]].val[0]=idTable[idImage[i][j-1]].val[0];
+    				idTable[idImage[i-1][j]].val[1]=idTable[idImage[i][j-1]].val[1];
+    				idTable[idImage[i-1][j]].val[2]=idTable[idImage[i][j-1]].val[2];
+
+    				*/
+
+					//Cambiamos por borrar ese ID de la table
+
+    				idTable.erase (idImage[i-1][j]);
+
+    				regionColor.val[0]=idTable[idImage[i][j-1]].val[0];
+    				regionColor.val[1]=idTable[idImage[i][j-1]].val[1];
+    				regionColor.val[2]=idTable[idImage[i][j-1]].val[2];
+
+    				idTable.insert(make_pair(idImage[i-1][j], regionColor));
+    				
+/*
+
+    				map<unsigned int,Vec3b>::iterator it;
+
+    				Vec3b aux;
+
+    				aux.val[0]=idTable[idImage[i-1][j]].val[0];
+    				aux.val[1]=idTable[idImage[i-1][j]].val[1];
+    				aux.val[2]=idTable[idImage[i-1][j]].val[2];
+
+    				it=idTable.find(idImage[i-1][j]);
+  					idTable.erase (it); 
+
+  					idTable.insert(make_pair(idImage[i-1][j], aux));*/
+
+    			}
+    
+
+    		}
+    	}	
+
+    	//Ahora coloreamos la imagen con la tabla de ID y la matriz de IDs que generamos
+
+    	for (int i = 0; i < binarizedImage.rows; i++)
+    		for (int j = 0; j < binarizedImage.cols; j++){
+
+    			segmentedImage.at<Vec3b>(i, j)[0] = idTable[idImage[i][j]].val[0];
+    			segmentedImage.at<Vec3b>(i, j)[1] = idTable[idImage[i][j]].val[1];
+    			segmentedImage.at<Vec3b>(i, j)[2] = idTable[idImage[i][j]].val[2];
+
+    		}
+
+	//BackUp
+	/*
+
+	for (int i = 0; i < binarizedImage.rows; ++i)
+    	for (int j = 0; j < binarizedImage.cols; ++j){
+
+    		//Para este algoritmo se presentan varios caso, primero el algoritmo encuentra un uno
+    		if(binarizedImage.at<Vec3b>(i,j)==white){
+
+    			//Acabamos de encontrar una semilla
+    			if(binarizedImage.at<Vec3b>(i-1,j)==black && binarizedImage.at<Vec3b>(i,j-1)==black){
+    				
+    				segmentedImage.at<Vec3b>(i, j) = regionColor;
+    				
+    				//El elemento id tendra un valor de region color
+    				idTable.insert(make_pair(id, regionColor));
+    				//Generamos un color aleatorio para colorear la region
+    				regionColor.val[0]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[1]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[2]=(unsigned char) randomNumber(0,255);
+
+    				//Incrementamos el id para la proxima region
+    				id++;
+
+
+    			}
+
+    			//Propagacion descendiente
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==white && binarizedImage.at<Vec3b>(i,j-1)==black){
+
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i-1, j)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i-1, j)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i-1, j)[2];
+    			}
+
+    			//Propagacion lateral
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==black && binarizedImage.at<Vec3b>(i,j-1)==white){
+    	
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i, j-1)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i, j-1)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i, j-1)[2];
+    			}
+
+    			//Propagacion indistinta
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==white && binarizedImage.at<Vec3b>(i,j-1)==white){
+    			  	
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i, j-1)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i, j-1)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i, j-1)[2];
+
+    				//Iteramos sobre todas las regiones registradas para ver quien tiene ese color
+    				map<unsigned int, Vec3b>::iterator it = idTable.begin();
+
+    				while(it != idTable.end())
+    				{
+        				//std::cout<<it->first<<" :: "<<it->second<<std::endl;
+        				//Si ese ID tiene el mismo color que la imagen de este momento
+        				it++;
+    				}
+
+
+    			}
+
+
+
+    
+
+    		}
+    	}
+    	*/
+    //IMPRMIR ID MATRIX
+
+
+
+}
+
+void segment2( Mat &binarizedImage, Mat &segmentedImage)
+{
+	//Si la imagen de destino ests vacia, se crea una nueva con las caracteristicas
+	//de la imagen binarizada
+
+    ofstream outputFile("program3data.txt");
+	if (segmentedImage.empty())
+	segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
+	
+	//Esta matriz contendra los ID's de cada segmento
+	unsigned int idImage[binarizedImage.rows][binarizedImage.cols];
+	
+	unsigned char idTableV0[80000];
+	unsigned char idTableV1[80000];
+	unsigned char idTableV2[80000];
+	
+	//Nuestra tala identificadora de regiones
+	
+
+
+	//idTable.insert(make_pair("1", Vec3b(1,2,3)));
+
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+	
+	int i,j; //Variables auxiliares
+    unsigned k;
+	unsigned int id=0; //Identificador de cada region
+	Vec3b regionColor(0,0,0); //Esta variable servira para agregar un color random a la region
+	unsigned char red,green,blue;
+
+	//Comenzamos con la region 0, la cual sera la que no tenga ningun color
+	//idTable.insert(make_pair(id, regionColor));
+
+	idTableV0[id]=regionColor.val[0];
+	idTableV1[id]=regionColor.val[1];
+	idTableV2[id]=regionColor.val[2];
+
+	id=1; 
+
+	for (int i = 0; i < binarizedImage.rows; i++){
+    	for (int j = 0; j < binarizedImage.cols; j++){
+    		idImage[i][j]=0;
+    	}
+	}
+
+	//Antes de iniciar tenemos que hacer un marco a binarized image de color negro para que no halla cosas raras
+	for (int i = 0; i < binarizedImage.rows; i++)
+	{
+		binarizedImage.at<Vec3b>(i,0)[0]=0;
+		binarizedImage.at<Vec3b>(i,0)[1]=0;
+		binarizedImage.at<Vec3b>(i,0)[2]=0;
+
+		binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[0]=0;
+		binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[1]=0;
+		binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[2]=0;
+
+	}
+
+	for (int j = 0; j < binarizedImage.cols; j++)
+	{
+		binarizedImage.at<Vec3b>(0,j)[0]=0;
+		binarizedImage.at<Vec3b>(0,j)[1]=0;
+		binarizedImage.at<Vec3b>(0,j)[2]=0;
+
+		binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[0]=0;
+		binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[1]=0;
+		binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[2]=0;
+
+	}
+
+
+	for (int i = 1; i < binarizedImage.rows-1; i++)
+    	for (int j = 1; j < binarizedImage.cols-1; j++){
+
+    		//Para este algoritmo se presentan varios caso, primero el algoritmo encuentra un uno
+    		if(binarizedImage.at<Vec3b>(i,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j)[1] == 255 && binarizedImage.at<Vec3b>(i,j)[2] == 255){
+
+    			//Acabamos de encontrar una semilla
+    			if(binarizedImage.at<Vec3b>(i-1,j)[0] == 0 && binarizedImage.at<Vec3b>(i,j-1)[0] == 0){
+    				
+    				//Guardamos el id para posteriormente colorearlo
+    				idImage[i][j] = id;
+
+
+    				
+    				//El elemento id tendra un valor de region color
+    				
+    				//Generamos un color aleatorio para colorear la region
+    				regionColor.val[0]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[1]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[2]=(unsigned char) randomNumber(0,255);
+
+    				//idTable.insert(make_pair(idImage[i][j], regionColor));
+    				
+    				idTableV0[idImage[i][j]]=regionColor.val[0];
+					idTableV1[idImage[i][j]]=regionColor.val[1];
+					idTableV2[idImage[i][j]]=regionColor.val[2];
+
+    				//Incrementamos el id para la proxima region
+    				id++;
+
+
+    			}
+
+    			//Propagacion descendiente
+    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 255 && binarizedImage.at<Vec3b>(i,j-1)[0]  == 0){
+
+    				idImage[i][j]=idImage[i-1][j];
+    
+    			}
+
+    			//Propagacion lateral
+    			else if (binarizedImage.at<Vec3b>(i-1,j)[0] == 0 && binarizedImage.at<Vec3b>(i,j-1)[0] == 255){
+
+    				idImage[i][j]=idImage[i][j-1];
+ 
+    			}
+
+    			//Propagacion indistinta
+    			else if (binarizedImage.at<Vec3b>(i-1,j) != black && binarizedImage.at<Vec3b>(i,j-1) != black){
+
+    			  	
+                    outputFile <<"\nAnalizando ["<<IntToString(i)<<"]["<<IntToString(j)<<"]\nPixel idImage["<<IntToString(i-1)<<"]["<<IntToString(j)<<"]="<<IntToString(idImage[i-1][j])<<" es True y pixel ["<<IntToString(i)<<"]["<<IntToString(j-1)<<"]="<<IntToString(idImage[i][j-1])<<" es True\n";
+    				//Propagacon lateral idImage[i][j]=idImage[i][j-1];
+                    idImage[i][j]=idImage[i-1][j];
+
+
+    				/*
+    				//Ahora el color del pixel superior va a ser igual al color del pixel actual,
+    				//porque somos la misma region
+    				idTable[idImage[i-1][j]].val[0]=idTable[idImage[i][j-1]].val[0];
+    				idTable[idImage[i-1][j]].val[1]=idTable[idImage[i][j-1]].val[1];
+    				idTable[idImage[i-1][j]].val[2]=idTable[idImage[i][j-1]].val[2];
+
+    				*/
+
+					//Cambiamos por borrar ese ID de la table
+
+
+                    outputFile <<"El color actual IDTable del pixel ["<<IntToString(i)<<"]["<<IntToString(j-1)<<"] lateral es ="<<IntToString(idTableV0[idImage[i][j-1]])<<"/"<<IntToString(idTableV1[idImage[i][j-1]])<<"/"<<IntToString(idTableV2[idImage[i][j-1]])<<"\n";
+    				
+                    //Todos los segmentos que tengan el color del pixel superior deben ser cambiados y poner el color del pixel lateral
+
+                    for(k=0; k<id+1 ; k++){
+
+                        if(idTableV0[k]==idTableV0[idImage[i][j-1]] && idTableV1[k]==idTableV1[idImage[i][j-1]] && idTableV2[k]==idTableV2[idImage[i][j-1]])
+                        {
+                            idTableV0[k]=idTableV0[idImage[i-1][j]];
+                            idTableV1[k]=idTableV1[idImage[i-1][j]];
+                            idTableV2[k]=idTableV2[idImage[i-1][j]];
+                        }
+                    }
+                    /*
+                    idTableV0[idImage[i][j-1]]=idTableV0[idImage[i-1][j]];
+					idTableV1[idImage[i][j-1]]=idTableV1[idImage[i-1][j]];
+					idTableV2[idImage[i][j-1]]=idTableV2[idImage[i-1][j]];*/
+                    outputFile <<"El color actual IDTable del pixel ["<<IntToString(i-1)<<"]["<<IntToString(j)<<"] superior es ="<<IntToString(idTableV0[idImage[i-1][j]])<<"/"<<IntToString(idTableV1[idImage[i-1][j]])<<"/"<<IntToString(idTableV2[idImage[i-1][j]])<<"\n";
+                    outputFile <<"El color nuevo IDTable del pixel lateral es ="<<IntToString(idTableV0[idImage[i][j-1]])<<"/"<<IntToString(idTableV1[idImage[i][j-1]])<<"/"<<IntToString(idTableV2[idImage[i][j-1]])<<"\n";
+
+    				
+/*
+
+    				map<unsigned int,Vec3b>::iterator it;
+
+    				Vec3b aux;
+
+    				aux.val[0]=idTable[idImage[i-1][j]].val[0];
+    				aux.val[1]=idTable[idImage[i-1][j]].val[1];
+    				aux.val[2]=idTable[idImage[i-1][j]].val[2];
+
+    				it=idTable.find(idImage[i-1][j]);
+  					idTable.erase (it); 
+
+  					idTable.insert(make_pair(idImage[i-1][j], aux));*/
+
+    			}
+    
+
+    		}
+    	}	
+
+    	//Ahora coloreamos la imagen con la tabla de ID y la matriz de IDs que generamos
+
+        
+
+        for (int i = 0; i < binarizedImage.rows; i++){
+            for (int j = 0; j < binarizedImage.cols; j++){
+
+                outputFile << IntToString(idImage[i][j])<<"\t";
+            }
+
+            outputFile << "\n";
+        }
+
+
+        for (int i = 0; i <= id; i++){
+        
+
+                outputFile << "\nID: "<<IntToString(i)<<" "<<IntToString(idTableV0[i])<<" "<<IntToString(idTableV1[i])<<" "<<IntToString(idTableV2[i])<<" ";
+
+            
+
+            outputFile << "\n";
+        }
+
+
+
+    	for (int i = 0; i < binarizedImage.rows; i++)
+    		for (int j = 0; j < binarizedImage.cols; j++){
+
+    			segmentedImage.at<Vec3b>(i, j)[0] = idTableV0[idImage[i][j]];
+    			segmentedImage.at<Vec3b>(i, j)[1] = idTableV1[idImage[i][j]];
+    			segmentedImage.at<Vec3b>(i, j)[2] = idTableV2[idImage[i][j]];
+
+    		}
+
+	//BackUp
+	/*
+
+	for (int i = 0; i < binarizedImage.rows; ++i)
+    	for (int j = 0; j < binarizedImage.cols; ++j){
+
+    		//Para este algoritmo se presentan varios caso, primero el algoritmo encuentra un uno
+    		if(binarizedImage.at<Vec3b>(i,j)==white){
+
+    			//Acabamos de encontrar una semilla
+    			if(binarizedImage.at<Vec3b>(i-1,j)==black && binarizedImage.at<Vec3b>(i,j-1)==black){
+    				
+    				segmentedImage.at<Vec3b>(i, j) = regionColor;
+    				
+    				//El elemento id tendra un valor de region color
+    				idTable.insert(make_pair(id, regionColor));
+    				//Generamos un color aleatorio para colorear la region
+    				regionColor.val[0]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[1]=(unsigned char) randomNumber(0,255);
+    				regionColor.val[2]=(unsigned char) randomNumber(0,255);
+
+    				//Incrementamos el id para la proxima region
+    				id++;
+
+
+    			}
+
+    			//Propagacion descendiente
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==white && binarizedImage.at<Vec3b>(i,j-1)==black){
+
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i-1, j)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i-1, j)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i-1, j)[2];
+    			}
+
+    			//Propagacion lateral
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==black && binarizedImage.at<Vec3b>(i,j-1)==white){
+    	
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i, j-1)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i, j-1)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i, j-1)[2];
+    			}
+
+    			//Propagacion indistinta
+    			else if (binarizedImage.at<Vec3b>(i-1,j)==white && binarizedImage.at<Vec3b>(i,j-1)==white){
+    			  	
+    				segmentedImage.at<Vec3b>(i, j)[0] = segmentedImage.at<Vec3b>(i, j-1)[0];
+    				segmentedImage.at<Vec3b>(i, j)[1] = segmentedImage.at<Vec3b>(i, j-1)[1];
+    				segmentedImage.at<Vec3b>(i, j)[2] = segmentedImage.at<Vec3b>(i, j-1)[2];
+
+    				//Iteramos sobre todas las regiones registradas para ver quien tiene ese color
+    				map<unsigned int, Vec3b>::iterator it = idTable.begin();
+
+    				while(it != idTable.end())
+    				{
+        				//std::cout<<it->first<<" :: "<<it->second<<std::endl;
+        				//Si ese ID tiene el mismo color que la imagen de este momento
+        				it++;
+    				}
+
+
+    			}
+
+
+
+    
+
+    		}
+    	}
+    	*/
+    //IMPRMIR ID MATRIX
+    //...
+
+
+//outputFile << IntToString(idImage[0][0])<<"\t"<<IntToString(idTableV0[1]);
+//... 
+
+
+
+}
+
+
 int main(int argc,char* argv[])
 {
+
+	Mat imageTest;
+    imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    Mat imageTestSeg;
+
+    if(! imageTest.data )                              // Check for invalid input
+    {
+        cout <<  "Could not open or find the image" << std::endl ;
+        return -1;
+    }
+
+    namedWindow( "Display window" );// Create a window for display.
+    segment2(imageTest,imageTestSeg);
+
+
+    imshow( "Display window", imageTestSeg );
+
+
+    imwrite( "Gray_Image.bmp", imageTestSeg );
+
+	Vec3b aux(111,222,255);
+	map<unsigned int,Vec3b> idTable;
+	
+	idTable.insert(make_pair(0, aux));
+	aux.val[0]=11;
+	aux.val[1]=22;
+	aux.val[2]=33;
+
+	idTable.insert(make_pair(1, aux));
+
+		aux.val[0]=44;
+	aux.val[1]=55;
+	aux.val[2]=66;
+
+
+	idTable.insert(make_pair(2, aux));
+
+		aux.val[0]=77;
+	aux.val[1]=88;
+	aux.val[2]=99;
+
+	idTable.insert(make_pair(3, aux));
+
+
+	//Experimento
+	//Declaramos matriz 3 x 3
+	unsigned int matriz[2][2];
+	matriz[0][0]=2;
+	matriz[0][1]=3;
+	matriz[1][0]=4;
+	matriz[1][1]=0;
+
+	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
+
+
     // VideoCapture cap(0); // open the default camera
     // if(!cap.isOpened())  // check if we succeeded
     //     return -1;
@@ -326,15 +836,8 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
-	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
+    cap >> currentImage;
 
-    // cap >> currentImage;
-
-    // image is captured
-    heli->renewImage(image);
-
-    // Copy to OpenCV Mat
-    rawToMat(currentImage, image);
     selectedImage = currentImage;
     while (stop == false)
     {
@@ -356,8 +859,11 @@ int main(int argc,char* argv[])
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
         }
 
+        //Vec3b aux;
+
         // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
         printf("===================== Parrot Basic Example =====================\n\n");
+        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
         fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
         fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
         fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
@@ -374,8 +880,9 @@ int main(int argc,char* argv[])
 
         // cap >> currentImage;
 
-        // resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-        imshow("ParrotCam", currentImage);
+
+        resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
+        // imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -384,39 +891,23 @@ int main(int argc,char* argv[])
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         // drawPolygonWithPoints();
-        // draw circle in last clicked point
+
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
-        Mat flipped;// = Mat(240, 320, CV_8UC3);
-        flipImageBasic(currentImage, flipped);
-        //imshow("Flipped", flipped);
-
-        //BGR to Gray Scale
-        Mat blackWhite; grayScale(currentImage, blackWhite);
-        imshow("Black and White", blackWhite);
-
-        //BINARIZACION
-        binarizeImage(blackWhite,binarizedImage, luminositySlider);
-        imshow("Binarized Image",binarizedImage);
-
         //BGR to YIQ
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-        imshow("YIQ", yiqOurImage);
 
-        Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
-        imshow("YIQ2", yiqOurImage2);
+        // imshow("YIQ1", yiqOurImage);
 
         //BGR to HSV
-        Mat hsv;
-        cvtColor(currentImage, hsv, CV_BGR2HSV);
-        imshow("HSV", hsv);
+        Mat hsv; cvtColor(currentImage, hsv, CV_BGR2HSV);
+        // imshow("HSV", hsv);
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
             case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
-            case 4: selectedImage = yiqOurImage2; canales="YIQ2"; break;
         }
         // Histogram
         vector<Mat> bgr_planes;
@@ -505,16 +996,10 @@ int main(int argc,char* argv[])
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        // // Applied flood fill to fill inner holes
-        // Mat im_floodfill = filteredImage.clone();
-        // floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
-        // // Invert floodfilled image
-        // Mat im_floodfill_inv;
-        // bitwise_not(im_floodfill, im_floodfill_inv);
-         
-        // // Combine the two images to get the foreground.
-        // filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
+                //Probamos segmentacion
+        segment2(filteredImage,segmentedImg);
+        imshow("SEGMENTACION",segmentedImg);
 
         char key = waitKey(5);
         switch (key) {
@@ -533,23 +1018,10 @@ int main(int argc,char* argv[])
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
-            case 'f':
-            //Funcion para congelar la imagen una vez el usuario oprima la tecla f
-            currentImage.copyTo(frozenImageBGR);
-            imshow("Frozen Image", frozenImageBGR);
 
-            //Congela una imagen en el modelo HSV
-            cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
-            imshow("Frozen Image in HSV", frozenImageHSV);
-
-            //Congela una imagen en el modelo HSV
-            bgr2yiq(frozenImageBGR, frozenImageYIQ);
-            imshow("Frozen Image in YIQ", frozenImageYIQ);
-            break;
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
-            case '4': selected=4; break;
 
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
