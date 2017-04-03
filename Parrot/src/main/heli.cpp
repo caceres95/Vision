@@ -13,16 +13,97 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <iostream>
+#include <time.h>       /* time */
+#include <map>
+#include <fstream>
 
 #include <opencv/cv.h>
 #include <errno.h>
 #include <math.h>
 #include <opencv/highgui.h>
+#include <string>
 
 
 using namespace std;
 using namespace cv;
 
+#include <sstream>
+
+//Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
+struct region {
+  Vec3b color;
+  unsigned int area;
+
+
+} ;
+
+struct caracterizacion{
+    //Estructura con todas los momentos estadisticos que puede tener una figura
+    Vec3b color;
+    unsigned int area;
+    //MOMENTOS ORDINARIOS
+    unsigned long long m00;
+    unsigned long long m10;
+    unsigned long long m20;
+    unsigned long long m30;
+    unsigned long long m01;
+    unsigned long long m02;
+    unsigned long long m03;
+    unsigned long long m11;
+    unsigned long long m12;
+    unsigned long long m21;
+
+    //MOMENTOS CENTRALIZADOS
+    unsigned long long u00;
+    unsigned long long u10;
+    unsigned long long u01;
+    double u20;
+    double u02;
+    double u11;
+    double u30;
+    double u03;
+    double u12;
+    double u21;
+
+    //MOMENTOS NORMALIZADOS
+    double n02;
+    double n03;
+    double n11;
+    double n12;
+    double n20;
+    double n21;
+    double n30;
+
+    double phi1;
+    double phi2;
+    double phi3;
+    double phi4;
+
+    double theta;
+
+    //PROMEDIOS
+    double xPromedio;
+    double yPromedio;
+
+
+};
+
+string IntToString (unsigned int a)
+{
+    ostringstream temp;
+    temp<<a;
+    return temp.str();
+}
+
+
+
+string DoubleToString(double a)
+{
+    ostringstream os;
+    os<<a;
+    return os.str();
+
+}
 // Here we will store points
 vector<Point> points;
 bool stop = false;
@@ -35,9 +116,6 @@ SDL_Joystick* m_joystick;
 bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
-string ultimo = "init";
-unsigned char luminositySlider;
-
 
 int Px;
 int Py;
@@ -52,89 +130,13 @@ Mat frozenImageYIQ;
 Mat frozenImageHSV;
 //Matriz donde se guardara la imagen en blanco y negro
 Mat binarizedImage;
+Mat segmentedImg;
 
 
 
 Mat selectedImage;
 int selected = 1;
 string canales = "RGB";
-
-/*
- * This method flips horizontally the sourceImage into destinationImage. Because it uses 
- * "Mat::at" method, its performance is low (redundant memory access searching for pixels).
- */
-
-void binarizeImage (const Mat &sourceImage, Mat &destinationImage, unsigned char threshold)
-{
-	//Si la imagen de destino no esta inicializada, se inicializa con las caracteristicas de la matriz fuente
-	if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    //Recorre todos los pixels de la matriz
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x)
-
-            	if(sourceImage.at<Vec3b>(y, x)[0]<threshold)
-            	{	
-            		//La luminosidad es menor al threshold, se pone en negro
-            		destinationImage.at<Vec3b>(y, x)[0] =0;
-            		destinationImage.at<Vec3b>(y, x)[1] =0;
-            		destinationImage.at<Vec3b>(y, x)[2] =0;
-            	}
-
-            	else 
-            	{
-            		//Se pone en blanco
-            		destinationImage.at<Vec3b>(y, x)[0] =255;
-            		destinationImage.at<Vec3b>(y, x)[1] =255;
-            		destinationImage.at<Vec3b>(y, x)[2] =255;
-            	}
-              
-}
-
-
-void flipImageBasic(const Mat &sourceImage, Mat &destinationImage)
-{
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols / 2; ++x)
-            for (int i = 0; i < sourceImage.channels(); ++i)
-            {
-                destinationImage.at<Vec3b>(y, x)[i] = sourceImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i];
-                destinationImage.at<Vec3b>(y, sourceImage.cols - 1 - x)[i] = sourceImage.at<Vec3b>(y, x)[i];
-            }
-}
-
-void drawPolygonWithPoints() {
-    if (imagenClick.data) {
-        int thickness=2;
-        int lineType=8;
-        int previous=0;
-        Scalar color=Scalar( 0, 0, 255 );
-     /* Draw all points */
-        for (int current = 0; current < (int) points.size(); ++current) {
-            circle(imagenClick, (Point)points[current], 5, color, CV_FILLED);
-            if (current>0) {
-                line( imagenClick, points[previous],points[current],color,thickness,lineType);
-                previous++;
-            }
-
-        }
-    }
-}
-
-void grayScale(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            int value=sourceImage.at<Vec3b>(y, x)[0]*0.1+sourceImage.at<Vec3b>(y, x)[1]*0.3+sourceImage.at<Vec3b>(y, x)[2]*0.6;
-            Vec3b intensity(value, value, value);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-        }
-}
 
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
@@ -166,30 +168,6 @@ void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
 
         }
 
-}
-
-void bgr2yiq2(const Mat &sourceImage, Mat &destinationImage) {
-    if (destinationImage.empty())
-        destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
-    for (int y = 0; y < sourceImage.rows; ++y)
-        for (int x = 0; x < sourceImage.cols; ++x) {
-            // bgr to yiq conversion
-            double yiq[3];
-            for (int i=0;i<3;i++) {
-                yiq[i]=0;
-                for (int j=0;j<3;j++) {
-                    yiq[i] += yiqMat[i][j] * sourceImage.at<Vec3b>(y, x)[j];
-                }
-            }
-            // normalize values
-            yiq[0] = yiq[0]; // Y
-            yiq[1] = CV_CAST_8U((int)(yiq[1])); // I
-            yiq[2] = CV_CAST_8U((int)(yiq[2])); //Q
-
-            Vec3b intensity(yiq[2], yiq[1], yiq[0]);
-            destinationImage.at<Vec3b>(y, x) = intensity;
-
-        }
 }
 
 // Convert CRawImage to Mat
@@ -284,23 +262,528 @@ void filterColorFromImage(const Mat &sourceImage, Mat &destinationImage) {
         }
 }
 
+//Retorna un numero random
+int randomNumber(int min, int max) //range : [min, max)
+{
+   static bool first = true;
+   if ( first ) 
+   {  
+      srand(time(NULL)); //seeding for the first time only!
+      first = false;
+   }
+   return min + rand() % (max - min);
+}
+
+/*
+	SEGMENTACION
+	Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
+	la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
+	con los identificadores de cada segmento
+
+
+*/
+
+
+void segment(Mat &binarizedImage, Mat &segmentedImage)
+{
+   
+
+    //Variables usadas en este algoritmo
+    int i, j; //Para los ciclos
+    unsigned int id, k, areaTemp; //Para la idenficacion(id) y color(k) de los segmentos
+    //Si la imagen de destino esta vacia, se inicializa
+    Vec3b white(255, 255, 255);
+    Vec3b black(0, 0, 0);
+    Vec3b regionColor;
+    Vec3b Pi,Ps, Pc; //Para identificar los tres pixeles analizadores
+    ofstream outputFile("LUT.txt");
+
+    if (segmentedImage.empty())
+    segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
+
+    //Inicializamos la matriz color toda en color negro
+    for (i=0; i<binarizedImage.rows; i++)
+    {
+        for (j=0; j<binarizedImage.cols; j++)
+        {
+            segmentedImage.at<Vec3b>(i, j)=black;
+        }
+    }
+
+    k=1;
+    id=1;
+
+    //
+    //Nuestra tabla identificadora de regiones
+    /*unsigned int m10;
+    unsigned int m20;
+    unsigned int m30;
+    unsigned int m01;
+    unsigned int m02;
+    unsigned int m03;
+    unsigned int m11;
+    unsigned int m12;
+    unsigned int m21;
+    LUT
+
+    ID  K(Color)    Area
+    1   1           A=A1+A2
+    2   2->1        A2
+    .   .           .
+    */
+
+    map<unsigned int,struct region> LUT;
+    map<unsigned int,struct region> FinalLUT;
+
+    struct region regionTemp;
+    unsigned int idImage[binarizedImage.rows][binarizedImage.cols];
+    unsigned int LUTSize;
+
+    for (i=0; i<binarizedImage.rows-1; i++)
+    {
+        for (j=0; j<binarizedImage.cols-1; j++)
+        {
+            idImage[i][j]=0;
+        }
+
+    }
+
+
+    //Antes de iniciar tenemos que hacer un marco a binarized image de color negro para que no halla cosas raras
+    for (int i = 0; i < binarizedImage.rows; i++)
+    {
+        binarizedImage.at<Vec3b>(i,0)[0]=0;
+        binarizedImage.at<Vec3b>(i,0)[1]=0;
+        binarizedImage.at<Vec3b>(i,0)[2]=0;
+
+        binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[0]=0;
+        binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[1]=0;
+        binarizedImage.at<Vec3b>(i,binarizedImage.cols-1)[2]=0;
+
+    }
+
+    for (int j = 0; j < binarizedImage.cols; j++)
+    {
+        binarizedImage.at<Vec3b>(0,j)[0]=0;
+        binarizedImage.at<Vec3b>(0,j)[1]=0;
+        binarizedImage.at<Vec3b>(0,j)[2]=0;
+
+        binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[0]=0;
+        binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[1]=0;
+        binarizedImage.at<Vec3b>(binarizedImage.rows-1,j)[2]=0;
+
+    }
+
+    //Comenzamos nuestro analisis pixel por pixel sobre la imagen
+     //Inicializamos la matriz color toda en color negro
+    for (i=1; i<binarizedImage.rows-1; i++)
+    {
+        for (j=1; j<binarizedImage.cols-1; j++)
+        {
+            if(binarizedImage.at<Vec3b>(i,j)==black)
+            {
+                continue;
+            }
+
+            else //La imagen orginal tiene un 1
+            {
+                Pi=binarizedImage.at<Vec3b>(i,j-1);
+                Ps=binarizedImage.at<Vec3b>(i-1,j);
+                Pc=binarizedImage.at<Vec3b>(i,j);
+
+                if(Ps==white && Pi == black)
+                {
+                    //Propagacion descendiente
+                    idImage[i][j]=idImage[i-1][j];
+
+                }
+                else if(Ps==black && Pi == white)
+                {
+                    //Propagacion lateral
+                    idImage[i][j]=idImage[i][j-1];
+                }
+
+                else if(Ps==white && Pi == white)
+                {
+                    //Propagacion indistinta, tenemos que detectar conflicto
+                    if(LUT[idImage[i-1][j]].color != LUT[idImage[i][j-1]].color)
+                    {
+
+                        
+                        //Region color contendra el color del pixel superior
+                        regionColor=LUT[idImage[i-1][j]].color;
+
+                        //Borrar dos lineas en caso de error
+                        LUT[idImage[i][j-1]].area+=LUT[idImage[i-1][j]].area;
+                        LUT[idImage[i-1][j]].area=0;
+                        //Guardamos su tamaño
+                        LUTSize=(unsigned int) LUT.size();
+
+
+                        //Iteramos sobre la LTU
+                        for (k=1; k<=LUTSize; k++)
+                        {
+                            //Quien tenga el color del pixel superior sera cambiado por el color del pixel lateral
+                            if(LUT[k].color==regionColor)
+                            {
+                                areaTemp=LUT[k].area;
+                                LUT.erase(k);
+                                   
+                                regionTemp.color=LUT[idImage[i][j-1]].color;
+                                LUT[idImage[i][j-1]].area+=areaTemp;
+                                regionTemp.area=0;
+                                LUT.insert(make_pair(k, regionTemp));
+
+                            }
+                        }
+                    }
+
+                    //Propagacion lateral
+                    idImage[i][j]=idImage[i][j-1];
+                }
+
+                else if(Ps==black && Pi == black)
+                {
+
+                    //Creamos un color aleatorio
+                    regionColor.val[0]=(unsigned char) randomNumber(0,255);
+                    regionColor.val[1]=(unsigned char) randomNumber(0,255);
+                    regionColor.val[2]=(unsigned char) randomNumber(0,255);
+
+                    //Inicializamos una nueva region
+                    regionTemp.color=regionColor;
+                    regionTemp.area=0;
+
+                    idImage[i][j]=id;
+
+                    LUT.insert(make_pair(id, regionTemp));
+
+                    id=id+1;
+
+                }
+
+                //Aumentamos area
+                LUT[idImage[i][j]].area++;
+
+
+            }
+        }
+
+    }   
+
+
+    //Coloreamos la imagen en base a los valores de la LUT
+    for (i=1; i<binarizedImage.rows-1; i++)
+    {
+        for (j=1; j<binarizedImage.cols-1; j++)
+        {
+            segmentedImage.at<Vec3b>(i, j)=LUT[idImage[i][j]].color;
+
+        }
+    }
+
+    LUTSize=(unsigned int) LUT.size();
+    //Almacenamos tabla
+    for( k=1; k<=LUTSize; k++)
+    {
+        outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(LUT[k].color[0])<<" "<<IntToString(LUT[k].color[1])<<" "<<IntToString(LUT[k].color[2])<<" Area: "<<IntToString(LUT[k].area)<<"\n";
+    }
+
+
+
+}
+
+//Esta funcion retorna true si ya existe un elemento
+bool exists(Vec3b color, map<unsigned int, struct caracterizacion> figures) {
+  // somehow I should find whether my MAP has a car
+  // with the name provided
+
+    unsigned int LUTSize, k;
+    LUTSize=(unsigned int) figures.size();
+
+    if(LUTSize==0)
+    {
+        return false;
+    }
+   
+    for (k=0; k<=LUTSize; k++)
+    {
+        if(figures[k].color==color)
+        {
+            return true;
+        }
+
+    }
+
+    return false;
+ 
+
+}
+
+unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion> figures)
+{
+    unsigned int LUTSize, k;
+    LUTSize=(unsigned int) figures.size();
+
+    if(LUTSize==0)
+    {
+        return 0;
+    }
+   
+    for (k=0; k<=LUTSize; k++)
+    {
+        if(figures[k].color==color)
+        {
+            return k;
+        }
+
+    }
+
+    return 0;
+}
+
+//Obtencion de momentos estadisticos
+void momentos(Mat &segmentedImage)
+{
+    unsigned  id,k,figuresSize;
+    unsigned long long i, j;
+    map<unsigned int,struct caracterizacion> figures;
+    Vec3b black(0,0,0);
+    id=0;
+    struct caracterizacion caracteristicas;
+    ofstream outputFile("figures.txt");
+
+        //Coloreamos la imagen en base a los valores de la LUT
+    for (i=1; i<segmentedImage.rows-1; i++)
+    {
+        for (j=1; j<segmentedImage.cols-1; j++)
+        {
+            if(segmentedImage.at<Vec3b>(i, j)!=black)
+            {
+                //Existe este color en la tabla de figuras?
+                if(!exists(segmentedImage.at<Vec3b>(i, j),figures))
+                {
+                    //No existe, crea un nuevo id
+                    caracteristicas.color=segmentedImage.at<Vec3b>(i, j);
+                    caracteristicas.area=0;
+                    caracteristicas.m00=0;
+                    caracteristicas.m10=0;
+                    caracteristicas.m20=0;
+                    caracteristicas.m30=0;
+                    caracteristicas.m01=0;
+                    caracteristicas.m02=0;
+                    caracteristicas.m03=0;
+                    caracteristicas.m11=0;
+                    caracteristicas.m12=0;
+                    caracteristicas.m21=0;
+
+                    figures.insert(make_pair(id, caracteristicas));
+                    id++;
+                }
+
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].area++;
+                /*
+                AGREGAR SUMATORIAS EN ESTE CAMPO
+                Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
+                */
+                /*SE COMIENZAN A OBTENER MOMENTOS ORDINARIOS*/
+
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m00++; /* m00= [sum x sum y] 1 */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m10+=i; /* m00= [sum x sum y] x */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m20+=pow(i,2); /* m00= [sum x sum y] x² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m30+=pow(i,3); /* m00= [sum x sum y] x³ */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m01+=j; /* m00= [sum x sum y] y */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m02+=pow(j,2); /* m00= [sum x sum y] y² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m03+=pow(j,3); /* m00= [sum x sum y] y³ */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m11+=i*j; /* m00= [sum x sum y] x*y */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m12+=i*pow(j,2); /* m00= [sum x sum y] x*y² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m21+=pow(i,2)*j; /* m00= [sum x sum y] x²*y */
+
+            }
+
+        }
+    }
+
+    //OBTENEMOS MOMENTOS CENTRALIZADOS (Para estos ya no necesitamos iterar la figura)
+    
+    figuresSize=figures.size();
+    for( k=0; k<figuresSize; k++)
+    {
+        //OBTENEMOS PROMEDIOS
+        figures[k].xPromedio=((double)figures[k].m10)/((double)figures[k].m00);
+        figures[k].yPromedio=((double)figures[k].m01)/((double)figures[k].m00);
+
+        
+        //Primer Orden
+        figures[k].u00=figures[k].m00;
+        figures[k].u10=0;
+        figures[k].u01=0;
+
+        //Segundo Orden
+        figures[k].u20=(double)figures[k].m20-figures[k].xPromedio*(double)figures[k].m10;
+        figures[k].u02=(double)figures[k].m02-figures[k].yPromedio*(double)figures[k].m01;
+        figures[k].u11=(double)figures[k].m11-figures[k].yPromedio*(double)figures[k].m10;
+        
+        //Tercer Orden
+        figures[k].u30=(double)figures[k].m30-3*figures[k].xPromedio*(double)figures[k].m20+2*pow(figures[k].xPromedio,2)*(double)figures[k].m10;
+        figures[k].u03=(double)figures[k].m03-3*figures[k].yPromedio*(double)figures[k].m02+2*pow(figures[k].yPromedio,2)*(double)figures[k].m01;
+
+        figures[k].u12=(double)figures[k].m12-2*figures[k].yPromedio*(double)figures[k].m11-figures[k].xPromedio*(double)figures[k].m02+2*pow(figures[k].yPromedio,2)*(double)figures[k].m10;
+        figures[k].u21=(double)figures[k].m21-2*figures[k].xPromedio*(double)figures[k].m11-figures[k].yPromedio*(double)figures[k].m20+2*pow(figures[k].xPromedio,2)*(double)figures[k].m01;
+
+        //Momentos Invariantes
+        figures[k].n02=figures[k].u02/(pow((double)figures[k].m00,2.0));
+        figures[k].n03=figures[k].u03/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
+        figures[k].n11=figures[k].u11/(pow((double)figures[k].m00,((double)2/(double)2)+1.0));
+        figures[k].n12=figures[k].u12/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
+        figures[k].n20=figures[k].u20/(pow((double)figures[k].m00,((double)2/(double)2)+1.0));
+        figures[k].n21=figures[k].u21/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
+        figures[k].n30=figures[k].u30/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
+
+        //MOMENTOS de HU
+        figures[k].phi1=figures[k].n20+figures[k].n02;
+        figures[k].phi2=pow(figures[k].n20-figures[k].n02,2)+4*pow(figures[k].n11,2);
+        figures[k].phi3=pow(figures[k].n30-3*figures[k].n12,2)+pow(3*figures[k].n21-figures[k].n03,2);
+        figures[k].phi4=pow(figures[k].n30+figures[k].n12,2)+pow(figures[k].n21+figures[k].n03,2);
+
+        figures[k].theta=0.5*atan2(2.0*figures[k].u11,figures[k].u20-figures[k].u02);
+
+
+
+
+    }
+
+    figuresSize=figures.size();
+    for( k=0; k<figuresSize; k++)
+    {
+        outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(figures[k].color[0])<<" "<<IntToString(figures[k].color[1])<<" "<<IntToString(figures[k].color[2])<<" | Area: "<<IntToString(figures[k].area)<<" ";
+        outputFile<<"| m00: "<<IntToString(figures[k].m00)<<" | m10: "<<IntToString(figures[k].m10)<<" | m20: "<<IntToString(figures[k].m20)<<" | m30: "<<IntToString(figures[k].m30);
+        outputFile<<" | m01: "<<IntToString(figures[k].m01)<<" | m02: "<<IntToString(figures[k].m02)<<" | m03: "<<IntToString(figures[k].m03);
+        outputFile<<" | m11: "<<IntToString(figures[k].m11)<<" | m12: "<<IntToString(figures[k].m12)<<" | m21: "<<IntToString(figures[k].m21)<<" | XProm: "<<DoubleToString(figures[k].xPromedio)<<" | YProm: "<<DoubleToString(figures[k].yPromedio)<<" ";
+        outputFile<<" | u10: "<<IntToString(figures[k].u10)<<" | u01: "<<IntToString(figures[k].u01)<<" | u20: "<<DoubleToString(figures[k].u20);
+        outputFile<<" | u02: "<<DoubleToString(figures[k].u02)<<" | u11: "<<DoubleToString(figures[k].u11)<<" | u30: "<<DoubleToString(figures[k].u30);
+        outputFile<<" | u03: "<<DoubleToString(figures[k].u03)<<" | u12: "<<DoubleToString(figures[k].u12)<<" | u21: "<<DoubleToString(figures[k].u21);
+        outputFile<<" | n02: "<<DoubleToString(figures[k].n02)<<" | n03: "<<DoubleToString(figures[k].n03)<<" | n11: "<<DoubleToString(figures[k].n11);
+        outputFile<<" | n12: "<<DoubleToString(figures[k].n12)<<" | n20: "<<DoubleToString(figures[k].n20)<<" | n21: "<<DoubleToString(figures[k].n21);
+        outputFile<<" | n30: "<<DoubleToString(figures[k].n30)<<" | phi1: "<<DoubleToString(figures[k].phi1)<<" | phi2: "<<DoubleToString(figures[k].phi2);
+        outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta)<<endl<<endl;
+
+
+
+        /*
+            //MOMENTOS NORMALIZADOS
+    double n02;
+    double n03;
+    double n11;
+    double n12;
+    double n20;
+    double n21;
+    double n30;
+    */
+    }
+
+
+}
+
+
 int main(int argc,char* argv[])
 {
-    VideoCapture cap(0); // open the default camera
-    if(!cap.isOpened())  // check if we succeeded
-        return -1;
-    //establishing connection with the quadcopter
-    // heli = new CHeli();
+
+    /*
+**********************************
+
+     ATENCION EQUIPO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+     La imagen binarizada se introduce en la funcion segment(ImagenBinarizada, ImagenSegmentada)
+
+     Despues la imagen segmentada se introduce en la funcion momentos(ImagenSegmentada, figures)
+
+     La funcion momentos recibe ademas como parametros un mapa, este mapa contendra los momentos de cada figura
+     
+     Este programa produce un archivo de texto llamado "figures.txt", por favor abranlo para que vean como esta estructurado todo
+
+
+
+*/
+
+
+    /* ESTE MAP CONTIENE EL ID, COLOR, Y MOMENTOS ESTADISTICOS DE CADA REGION
+
+    */
+
     
-    //this class holds the image from the drone 
-    // image = new CRawImage(320,240);
+	Mat imageTest;
+    imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    Mat imageTestSeg;
+
+
+
+
+    if(! imageTest.data )                              // Check for invalid input
+    {
+        cout <<  "Could not open or find the image" << std::endl ;
+        return -1;
+    }
+
+    namedWindow( "Display window" );// Create a window for display.
+    segment(imageTest,imageTestSeg);
+    momentos(imageTestSeg);
+
+    imshow( "Display window", imageTestSeg );
+
+
+    imwrite( "Gray_Image.bmp", imageTestSeg );
+
+	Vec3b aux(111,222,255);
+	map<unsigned int,Vec3b> idTable;
+	
+	idTable.insert(make_pair(0, aux));
+	aux.val[0]=11;
+	aux.val[1]=22;
+	aux.val[2]=33;
+
+	idTable.insert(make_pair(1, aux));
+
+		aux.val[0]=44;
+	aux.val[1]=55;
+	aux.val[2]=66;
+
+
+	idTable.insert(make_pair(2, aux));
+
+		aux.val[0]=77;
+	aux.val[1]=88;
+	aux.val[2]=99;
+
+	idTable.insert(make_pair(3, aux));
+
+
+	//Experimento
+	//Declaramos matriz 3 x 3
+	unsigned int matriz[2][2];
+	matriz[0][0]=2;
+	matriz[0][1]=3;
+	matriz[1][0]=4;
+	matriz[1][1]=0;
+
+	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
+
+
+    // VideoCapture cap(0); // open the default camera
+    // if(!cap.isOpened())  // check if we succeeded
+    //     return -1;
+    // establishing connection with the quadcopter
+    heli = new CHeli();
+    
+    // this class holds the image from the drone 
+    image = new CRawImage(320,240);
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
     joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
 
     // Destination OpenCV Mat   
-    Mat currentImage;// = Mat(240, 320, CV_8UC3);
+    Mat currentImage = Mat(240, 320, CV_8UC3);
     // Show it  
     //imshow("ParrotCam", currentImage);
 
@@ -326,9 +809,8 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
-	createTrackbar( "Threshold for Binarize", "Controls", (int *) &luminositySlider, 255, on_trackbar );
+    //cap >> currentImage;
 
-    cap >> currentImage;
     selectedImage = currentImage;
     while (stop == false)
     {
@@ -350,8 +832,11 @@ int main(int argc,char* argv[])
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
         }
 
+        //Vec3b aux;
+
         // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
         printf("===================== Parrot Basic Example =====================\n\n");
+        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
         fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
         fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
         fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
@@ -366,55 +851,36 @@ int main(int argc,char* argv[])
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        cap >> currentImage;
+        // cap >> currentImage;
+
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-        imshow("ParrotCam", currentImage);
+        // imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
         textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
-    //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(imagenClick, textStream.str(), cvPoint(5,15), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
         // drawPolygonWithPoints();
+
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
-        Mat flipped;// = Mat(240, 320, CV_8UC3);
-        flipImageBasic(currentImage, flipped);
-        //imshow("Flipped", flipped);
-
-        //BGR to Gray Scale
-        Mat blackWhite; grayScale(currentImage, blackWhite);
-        imshow("Black and White", blackWhite);
-        IplImage* image = cvCreateImage(cvSize(currentImage.cols, currentImage.rows), 8, 3);
-        IplImage ipltemp = currentImage;
-        cvCopy(&ipltemp, image);
-
-        //BINARIZACION
-        binarizeImage(blackWhite,binarizedImage, luminositySlider);
-        imshow("Binarized Image",binarizedImage);
-
         //BGR to YIQ
-        //Mat yiqImage(convertImageRGBtoYIQ(image));
-        //imshow("YIQOther", yiqImage);
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-        imshow("YIQ1", yiqOurImage);
 
-        Mat yiqOurImage2; bgr2yiq2(currentImage, yiqOurImage2);
-        imshow("YIQ2", yiqOurImage2);
+        // imshow("YIQ1", yiqOurImage);
 
         //BGR to HSV
-        Mat hsv;
-        cvtColor(currentImage, hsv, CV_BGR2HSV);
-        imshow("HSV", hsv);
+        Mat hsv; cvtColor(currentImage, hsv, CV_BGR2HSV);
+        // imshow("HSV", hsv);
 
         switch(selected) {
             case 1: selectedImage = currentImage; canales="RGB"; break;
             case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
-            case 4: selectedImage = yiqOurImage2; canales = "YIQ2"; break;
         }
         // Histogram
         vector<Mat> bgr_planes;
@@ -503,16 +969,10 @@ int main(int argc,char* argv[])
         blur(selectedImage,selectedImage,Size(10,10)); 
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        // // Applied flood fill to fill inner holes
-        // Mat im_floodfill = filteredImage.clone();
-        // floodFill(im_floodfill, cv::Point(0,0), Scalar(255,255,255));
-        // // Invert floodfilled image
-        // Mat im_floodfill_inv;
-        // bitwise_not(im_floodfill, im_floodfill_inv);
-         
-        // // Combine the two images to get the foreground.
-        // filteredImage = (filteredImage | im_floodfill_inv);
         imshow("Filtered Image", filteredImage);
+                //Probamos segmentacion
+        segment(filteredImage,segmentedImg);
+        imshow("SEGMENTACION",segmentedImg);
 
         char key = waitKey(5);
         switch (key) {
@@ -520,72 +980,59 @@ int main(int argc,char* argv[])
             case 'd': yaw = 20000.0; break;
             case 'w': height = -20000.0; break;
             case 's': height = 20000.0; break;
-            // case 'q': heli->takeoff(); break;
-            // case 'e': heli->land(); break;
-            // case 'z': heli->switchCamera(0); break;
-            // case 'x': heli->switchCamera(1); break;
-            // case 'c': heli->switchCamera(2); break;
-            // case 'v': heli->switchCamera(3); break;
+            case 'q': heli->takeoff(); break;
+            case 'e': heli->land(); break;
+            case 'z': heli->switchCamera(0); break;
+            case 'x': heli->switchCamera(1); break;
+            case 'c': heli->switchCamera(2); break;
+            case 'v': heli->switchCamera(3); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
-            case 'f':
-            //Funcion para congelar la imagen una vez el usuario oprima la tecla f
-            currentImage.copyTo(frozenImageBGR);
-            imshow("Frozen Image", frozenImageBGR);
 
-            //Congela una imagen en el modelo HSV
-            cvtColor(frozenImageBGR, frozenImageHSV, CV_BGR2HSV);
-            imshow("Frozen Image in HSV", frozenImageHSV);
-
-            //Congela una imagen en el modelo HSV
-            bgr2yiq(frozenImageBGR, frozenImageYIQ);
-            imshow("Frozen Image in YIQ", frozenImageYIQ);
-            break;
             case '1': selected=1; break;
             case '2': selected=2; break;
             case '3': selected=3; break;
-            case '4': selected=4; break;
 
             case 27: stop = true; break;
             default: pitch = roll = yaw = height = 0.0;
         }
  
-        // if (joypadTakeOff) {
-        //     heli->takeoff();
-        // }
-        // if (joypadLand) {
-        //     heli->land();
-        // }
-        //hover = joypadHover ? 1 : 0;
+        if (joypadTakeOff) {
+            heli->takeoff();
+        }
+        if (joypadLand) {
+            heli->land();
+        }
+        hover = joypadHover ? 1 : 0;
 
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            // heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
+            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
         else
         {
-            // heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
     
-        //image is captured
-        // heli->renewImage(image);
+        // image is captured
+        heli->renewImage(image);
 
         // Copy to OpenCV Mat
-        // rawToMat(currentImage, image);
+        rawToMat(currentImage, image);
         
 
         usleep(15000);
     }
     
-    // heli->land();
+    heli->land();
     SDL_JoystickClose(m_joystick);
-    // delete heli;
-    //delete image;
+    delete heli;
+    delete image;
     return 0;
 }
