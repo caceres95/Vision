@@ -554,9 +554,9 @@ void momentos(Mat &segmentedImage)
     ofstream outputFile("figures.txt");
 
         //Coloreamos la imagen en base a los valores de la LUT
-    for (i=1; i<segmentedImage.rows-1; i++)
+    for (i=0; i<segmentedImage.rows; i++)
     {
-        for (j=1; j<segmentedImage.cols-1; j++)
+        for (j=0; j<segmentedImage.cols; j++)
         {
             if(segmentedImage.at<Vec3b>(i, j)!=black)
             {
@@ -666,8 +666,10 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | n02: "<<DoubleToString(figures[k].n02)<<" | n03: "<<DoubleToString(figures[k].n03)<<" | n11: "<<DoubleToString(figures[k].n11);
         outputFile<<" | n12: "<<DoubleToString(figures[k].n12)<<" | n20: "<<DoubleToString(figures[k].n20)<<" | n21: "<<DoubleToString(figures[k].n21);
         outputFile<<" | n30: "<<DoubleToString(figures[k].n30)<<" | phi1: "<<DoubleToString(figures[k].phi1)<<" | phi2: "<<DoubleToString(figures[k].phi2);
-        outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta)<<endl<<endl;
+        outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta);
+        outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265)<<endl<<endl;
 
+        circle (segmentedImage, Point(figures[k].xPromedio,figures[k].yPromedio),5,Scalar(255,0,0),CV_FILLED);
 
 
         /*
@@ -712,27 +714,27 @@ int main(int argc,char* argv[])
     */
 
     
-	Mat imageTest;
-    imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
-    Mat imageTestSeg;
+	//Mat imageTest;
+    //imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+   // Mat imageTestSeg;
 
 
 
-
+/*
     if(! imageTest.data )                              // Check for invalid input
     {
         cout <<  "Could not open or find the image" << std::endl ;
         return -1;
-    }
+    }*/
 
     namedWindow( "Display window" );// Create a window for display.
-    segment(imageTest,imageTestSeg);
-    momentos(imageTestSeg);
+    //segment(imageTest,imageTestSeg);
+    //momentos(imageTestSeg);
 
-    imshow( "Display window", imageTestSeg );
+    //imshow( "Display window", imageTestSeg );
 
 
-    imwrite( "Gray_Image.bmp", imageTestSeg );
+    //imwrite( "Gray_Image.bmp", imageTestSeg );
 
 	Vec3b aux(111,222,255);
 	map<unsigned int,Vec3b> idTable;
@@ -972,6 +974,8 @@ int main(int argc,char* argv[])
         imshow("Filtered Image", filteredImage);
                 //Probamos segmentacion
         segment(filteredImage,segmentedImg);
+        
+        momentos(segmentedImg);
         imshow("SEGMENTACION",segmentedImg);
 
         char key = waitKey(5);
