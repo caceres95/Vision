@@ -542,11 +542,12 @@ unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion
     return 0;
 }
 
+
 //Obtencion de momentos estadisticos
 void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
-    unsigned long long i, j;
+    unsigned long long i, j,x,y;
     map<unsigned int,struct caracterizacion> figures;
     Vec3b black(0,0,0);
     id=0;
@@ -554,17 +555,17 @@ void momentos(Mat &segmentedImage)
     ofstream outputFile("figures.txt");
 
         //Coloreamos la imagen en base a los valores de la LUT
-    for (i=0; i<segmentedImage.rows; i++)
+    for (x=0; x<segmentedImage.cols; x++)
     {
-        for (j=0; j<segmentedImage.cols; j++)
+        for (y=0; y<segmentedImage.rows; y++)
         {
-            if(segmentedImage.at<Vec3b>(i, j)!=black)
+            if(segmentedImage.at<Vec3b>(y, x)!=black)
             {
                 //Existe este color en la tabla de figuras?
-                if(!exists(segmentedImage.at<Vec3b>(i, j),figures))
+                if(!exists(segmentedImage.at<Vec3b>(y, x),figures))
                 {
                     //No existe, crea un nuevo id
-                    caracteristicas.color=segmentedImage.at<Vec3b>(i, j);
+                    caracteristicas.color=segmentedImage.at<Vec3b>(y, x);
                     caracteristicas.area=0;
                     caracteristicas.m00=0;
                     caracteristicas.m10=0;
@@ -581,23 +582,23 @@ void momentos(Mat &segmentedImage)
                     id++;
                 }
 
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].area++;
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
                 /*
                 AGREGAR SUMATORIAS EN ESTE CAMPO
                 Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
                 */
                 /*SE COMIENZAN A OBTENER MOMENTOS ORDINARIOS*/
 
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m00++; /* m00= [sum x sum y] 1 */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m10+=i; /* m00= [sum x sum y] x */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m20+=pow(i,2); /* m00= [sum x sum y] x² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m30+=pow(i,3); /* m00= [sum x sum y] x³ */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m01+=j; /* m00= [sum x sum y] y */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m02+=pow(j,2); /* m00= [sum x sum y] y² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m03+=pow(j,3); /* m00= [sum x sum y] y³ */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m11+=i*j; /* m00= [sum x sum y] x*y */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m12+=i*pow(j,2); /* m00= [sum x sum y] x*y² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(i, j), figures)].m21+=pow(i,2)*j; /* m00= [sum x sum y] x²*y */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m00++; /* m00= [sum x sum y] 1 */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m10+=x; /* m00= [sum x sum y] x */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m20+=pow(x,2); /* m00= [sum x sum y] x² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m30+=pow(x,3); /* m00= [sum x sum y] x³ */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m01+=y; /* m00= [sum x sum y] y */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m02+=pow(y,2); /* m00= [sum x sum y] y² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m03+=pow(y,3); /* m00= [sum x sum y] y³ */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
+                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
 
             }
 
@@ -667,9 +668,10 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | n12: "<<DoubleToString(figures[k].n12)<<" | n20: "<<DoubleToString(figures[k].n20)<<" | n21: "<<DoubleToString(figures[k].n21);
         outputFile<<" | n30: "<<DoubleToString(figures[k].n30)<<" | phi1: "<<DoubleToString(figures[k].phi1)<<" | phi2: "<<DoubleToString(figures[k].phi2);
         outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta);
-        outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265)<<endl<<endl;
+        outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265);
+        outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
 
-        circle (segmentedImage, Point(figures[k].xPromedio,figures[k].yPromedio),5,Scalar(255,0,0),CV_FILLED);
+        circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
 
 
         /*
@@ -713,28 +715,9 @@ int main(int argc,char* argv[])
 
     */
 
-    
-	//Mat imageTest;
-    //imageTest = imread("test.png", CV_LOAD_IMAGE_COLOR);   // Read the file
-   // Mat imageTestSeg;
 
 
 
-/*
-    if(! imageTest.data )                              // Check for invalid input
-    {
-        cout <<  "Could not open or find the image" << std::endl ;
-        return -1;
-    }*/
-
-    namedWindow( "Display window" );// Create a window for display.
-    //segment(imageTest,imageTestSeg);
-    //momentos(imageTestSeg);
-
-    //imshow( "Display window", imageTestSeg );
-
-
-    //imwrite( "Gray_Image.bmp", imageTestSeg );
 
 	Vec3b aux(111,222,255);
 	map<unsigned int,Vec3b> idTable;
@@ -974,8 +957,9 @@ int main(int argc,char* argv[])
         imshow("Filtered Image", filteredImage);
                 //Probamos segmentacion
         segment(filteredImage,segmentedImg);
-        
         momentos(segmentedImg);
+        
+        //momentos(segmentedImg);
         imshow("SEGMENTACION",segmentedImg);
 
         char key = waitKey(5);
