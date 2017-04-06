@@ -29,6 +29,8 @@ using namespace cv;
 
 #include <sstream>
 
+#define PI 3.14159265
+
 //Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
 struct region {
   Vec3b color;
@@ -119,8 +121,8 @@ bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
 
 int Px;
 int Py;
-int vC1, vC2, vC3;
-int thresh1=0, thresh2=0, thresh3=0;
+int vC1=85, vC2=115, vC3=152;
+int thresh1=11, thresh2=12, thresh3=27;
 
 Mat imagenClick;
 
@@ -849,7 +851,7 @@ void momentos(Mat &segmentedImage)
 
 
     }
-    int xDiff = 50;
+    int length = 50;
     figuresSize=figures.size();
     for( k=0; k<figuresSize; k++)
     {
@@ -875,7 +877,7 @@ void momentos(Mat &segmentedImage)
                 figures[k].yPromedio+.5
                 ), // Centroide
             Point(
-                figures[k].xPromedio+.5 + xDiff, 
+                figures[k].xPromedio+.5 + length*cos(figures[k].theta), 
                 figures[k].yPromedio+.5
                 ), // Centroide + distancia a la derecha en X
             Scalar( 255, 0, 0), 2, 8, 0  
@@ -887,8 +889,8 @@ void momentos(Mat &segmentedImage)
                 figures[k].yPromedio+.5
                 ), // Centroide
             Point(
-                figures[k].xPromedio+.5 + xDiff, // x 
-                figures[k].yPromedio+.5 + xDiff*tan(figures[k].theta) // y
+                figures[k].xPromedio+.5 + length*cos(figures[k].theta), // x 
+                figures[k].yPromedio+.5 + length*sin(figures[k].theta) // y
                 ),
                 Scalar( 255, 0, 0), 2, 8, 0  
             );
@@ -897,7 +899,7 @@ void momentos(Mat &segmentedImage)
                 figures[k].xPromedio+.5,
                 figures[k].yPromedio+.5 
                 ),
-            Size( xDiff/2, xDiff/2 ), figures[k].theta, -180, figures[k].theta,
+            Size( length/2, length/2 ), 0, 0, figures[k].theta*180 / PI,
             Scalar( 0, 255, 0 ), 1, 8 );
         /*
             //MOMENTOS NORMALIZADOS
@@ -1076,6 +1078,12 @@ int main(int argc,char* argv[])
         // drawPolygonWithPoints();
 
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
+        // ellipse( imagenClick, 
+        //     Point(
+        //         150,150
+        //         ),
+        //     Size( 25, 25 ), 0, 0, 60,
+        //     Scalar( 0, 255, 0 ), 1, 8 );
         imshow("Click", imagenClick);
 
         //BGR to YIQ
