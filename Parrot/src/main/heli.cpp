@@ -937,11 +937,11 @@ void momentos(Mat &segmentedImage)
 
 
 }
-int phis[4][4];
-int phi1X=0, phi2X=0, phi1DevX=0, phi2DevX=0;
-int phi1I=0, phi2I=0, phi1DevI=0, phi2DevI=0;
-int phi1O=0, phi2O=0, phi1DevO=0, phi2DevO=0;
-int phi1L=0, phi2L=0, phi1DevL=0, phi2DevL=0;
+double phis[4][4];
+double phi1X=0.234635125, phi2X=0.010914375, phi1DevX=0.0173943456, phi2DevX=0.0022282768;
+double phi1I=0.2757821111, phi2I=0.0279318389, phi1DevI=0.0058238707, phi2DevI=0.0023386929;
+double phi1O=0.2207848824, phi2O=0.0062462229, phi1DevO=0.010904511, phi2DevO=0.001624447;
+double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 void initPhis() {
     phis[0][0]=phi1X;
@@ -1090,7 +1090,7 @@ int main(int argc,char* argv[])
 	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
     initPhis();
-    
+
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
