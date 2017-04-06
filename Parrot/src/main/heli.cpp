@@ -1040,6 +1040,21 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
+    /* ventanas puestas por default
+    // en las posiciones en pixeles
+    // (10,10) (380, 10) (700, 10) (1020, 10)
+    //         (380, 300) (700, 300) (1020, 300)
+    */
+    namedWindow("Filtered Image");
+    namedWindow("SEGMENTACION");
+    moveWindow("Click", 10, 10);
+    moveWindow("C1", 380, 300);
+    moveWindow("C2", 700, 300);
+    moveWindow("C3", 1020, 300);
+    moveWindow("Controls", 1020, 10);
+    moveWindow("Filtered Image", 380, 10);
+    moveWindow("SEGMENTACION", 700, 10);
+
     cap >> currentImage;
 
     selectedImage = currentImage;
