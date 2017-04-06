@@ -135,7 +135,7 @@ Mat segmentedImg;
 
 
 Mat selectedImage;
-int selected = 1;
+int selected = 2;
 string canales = "RGB";
 
 // Matriz para convertir a YIQ
@@ -144,6 +144,202 @@ double yiqMat[3][3] = {
     {-0.332, -0.274, 0.596},
     {0.312, -0.523, 0.211}
 };
+
+// segmentation code
+#define PI 3.14159265
+
+class Pix{
+public:
+    long long int x, y;
+    int val;
+    int color;
+};
+
+class Blob{
+public:
+
+    vector<Pix> elements;
+    long long int area() {return (long long int) elements.size();}
+    int color;
+    long long int m00, m01, m02, m10, m20, m11;
+    double x_centroid, y_centroid;
+    double M00, M02, M20, M11;
+    double n20, n02, n11;
+    double phi1, phi2;
+    double theta;
+};
+
+void stat_moments(Blob &obj){
+    obj.m00 = obj.area();
+    obj.m10 = 0;
+    obj.m01 = 0;
+    obj.m20 = 0;
+    obj.m02 = 0;
+    obj.m11 = 0;
+    for (long long int i = 0; i < obj.elements.size(); i++){
+        obj.m10 += obj.elements[i].x;
+        obj.m01 += obj.elements[i].y;
+        obj.m20 += (obj.elements[i].x * obj.elements[i].x);
+        obj.m02 += (obj.elements[i].y * obj.elements[i].y);
+        obj.m11 += (obj.elements[i].x * obj.elements[i].y); 
+    }
+    obj.x_centroid = (double) obj.m10/obj.m00;
+    obj.y_centroid = (double) obj.m01/obj.m00;
+}
+
+void central_moments(Blob &obj){
+    obj.M00 = obj.m00;
+    obj.M02 = obj.m02 - (obj.y_centroid*obj.m01);
+    obj.M20 = obj.m20 - (obj.x_centroid*obj.m10);
+    obj.M11 = obj.m11 - (obj.x_centroid*obj.m01);
+}
+
+void invariant_moments(Blob &obj){
+    obj.n20 = obj.M20/(obj.M00*obj.M00);
+    obj.n02 = obj.M02/(obj.M00*obj.M00);
+    obj.n11 = obj.M11;
+
+    obj.phi1 = obj.n20 + obj.n02;
+    obj.phi2 = (obj.n20 - obj.n02)*(obj.n20 - obj.n02) + (4*obj.n11*obj.n11);
+
+    obj.theta = 0.5*atan2(2*obj.M11, obj.M20 - obj.M02);        
+}
+
+void mergeRegions(vector<Blob> &region_vec, int index_1, int index_2, Mat &blobTemp){
+    Blob *masterBlob, *slaveBlob;
+    Pix masterPix, slavePix;
+
+    masterBlob = &region_vec[index_2];
+    slaveBlob = &region_vec[index_1];
+
+    masterPix = masterBlob->elements.back();
+
+    for(int i = 0; i < slaveBlob->elements.size(); i++){
+        slavePix = slaveBlob->elements[i];
+        masterBlob->elements.push_back(slavePix);
+        blobTemp.at<ushort>(slavePix.y,slavePix.x) = (ushort) masterPix.color;
+    }
+    slaveBlob->elements.clear();
+    slaveBlob->color = 0;
+}
+
+void blobColoring (Mat &sourceImage){
+
+    Mat colorImg(sourceImage.rows, sourceImage.cols, CV_8UC3, Scalar::all(0));
+    Blob blob, *ptr2blob;
+    Pix pc, pi, ps;
+    Mat blobTemp(sourceImage.rows, sourceImage.cols, CV_16UC1, Scalar::all(0));
+
+    vector<Blob> regions, segments;
+
+    int color; 
+    int numofReg = 0;
+
+    cout << "Size img: " << sourceImage.rows << " x " << sourceImage.cols << endl;
+    cout << "No. Pixels: " << sourceImage.rows*sourceImage.cols << endl;
+
+    for (long long int y = 1; y < sourceImage.rows; y++){
+
+        for (long long int x = 1; x < sourceImage.cols; x++){
+
+            pc.x = x; pc.y = y;
+            pc.val = (int) sourceImage.at<uchar>(y,x);
+
+            pi.x = x-1; pi.y = y;
+            pi.color = (int) blobTemp.at<ushort>(y,x-1);
+
+            ps.x = x; ps.y = y-1;
+            ps.color = (int) blobTemp.at<ushort>(y-1,x);
+
+            if(pc.val == 0) {}
+            else{
+                if(pi.color == 0 && ps.color == 0){
+                    color = (int) regions.size() + 1;
+                    pc.color = color;
+                    blob.elements.push_back(pc);
+                    blob.color = color;
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                    regions.push_back(blob);
+                    blob.elements.clear();
+                }
+                else if (pi.color != 0 && ps.color == 0){
+                    pc.color = pi.color;
+                    ptr2blob = &regions[pc.color-1];
+                    (*ptr2blob).elements.push_back(pc);
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                }
+                else if (pi.color == 0 && ps.color != 0){
+                    pc.color = ps.color;
+                    ptr2blob = &regions[pc.color-1];
+                    (*ptr2blob).elements.push_back(pc);
+                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+                }
+                else if (pi.color != 0 && ps.color != 0){
+                        pc.color = ps.color;
+                        ptr2blob = &regions[pc.color-1];
+                        (*ptr2blob).elements.push_back(pc);
+                        blobTemp.at<ushort>(y,x) = (ushort) pc.color;
+
+                    if (pi.color != ps.color){
+                        mergeRegions(regions, pi.color-1, ps.color-1, blobTemp);
+                    }
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < regions.size(); i++){
+        if (regions[i].color != 0){
+            segments.push_back(regions[i]);
+        }
+    }
+
+    for (int i = 0; i < segments.size(); i++){
+        segments[i].color = i;  
+        uchar b = (uchar) rand() % 256;
+        uchar g = (uchar) rand() % 256;
+        uchar r = (uchar) rand() % 256;
+
+        for (int j = 0; j < segments[i].elements.size(); j++){
+            Vec3b & color = colorImg.at<Vec3b>(segments[i].elements[j].y,segments[i].elements[j].x);
+            color[0] = b;
+            color[1] = g;
+            color[2] = r;
+        }
+    }
+
+    cout << "Number of regions: " << segments.size() << endl;
+    for (int i=0; i<segments.size(); i++){
+        stat_moments(segments[i]);
+        central_moments(segments[i]);
+        invariant_moments(segments[i]);
+
+        cout << setprecision(2) << fixed;
+        cout << "Area: " << i << " " << segments[i].area() << " ";
+        cout << "m00: " << segments[i].m00 << " ";
+        cout << "m01: " << segments[i].m01 << " ";
+        cout << "m10: " << segments[i].m10 << " ";
+        cout << "m02: " << segments[i].m02 << " ";
+        cout << "m20: " << segments[i].m20 << " ";
+        cout << "m11: " << segments[i].m11 << " ";
+        cout << "X Centroid: " << segments[i].x_centroid << " ";
+        cout << "Y Centroid " << segments[i].y_centroid << endl;
+        cout << "M00: " << segments[i].M00 << " ";
+        cout << "M02: " << segments[i].M02 << " ";
+        cout << "M20: " << segments[i].M20 << " ";
+        cout << "M11: " << segments[i].M11 << endl;
+        cout << "n02: " << segments[i].n02 << " ";
+        cout << "n20: " << segments[i].n20 << " ";
+        cout << "n11: " << segments[i].n11 << endl;
+        cout << "phi1: " << segments[i].phi1 << " ";
+        cout << "phi2: " << segments[i].phi2 << " ";
+        cout << "theta: " << segments[i].theta * 180/PI << endl << endl;
+        // cout << segments[i].phi1 << "," << segments[i].phi2 << endl;
+
+    }
+
+    imshow( "Color image", colorImg );
+}
 
 void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
     if (destinationImage.empty())
@@ -484,10 +680,10 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
     LUTSize=(unsigned int) LUT.size();
     //Almacenamos tabla
-    for( k=1; k<=LUTSize; k++)
-    {
-        outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(LUT[k].color[0])<<" "<<IntToString(LUT[k].color[1])<<" "<<IntToString(LUT[k].color[2])<<" Area: "<<IntToString(LUT[k].area)<<"\n";
-    }
+    // for( k=1; k<=LUTSize; k++)
+    // {
+    //     outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(LUT[k].color[0])<<" "<<IntToString(LUT[k].color[1])<<" "<<IntToString(LUT[k].color[2])<<" Area: "<<IntToString(LUT[k].area)<<"\n";
+    // }
 
 
 
@@ -653,7 +849,7 @@ void momentos(Mat &segmentedImage)
 
 
     }
-
+    int xDiff = 50;
     figuresSize=figures.size();
     for( k=0; k<figuresSize; k++)
     {
@@ -672,8 +868,37 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
 
         circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
-
-
+        line (
+            segmentedImage, 
+            Point(
+                figures[k].xPromedio+.5, 
+                figures[k].yPromedio+.5
+                ), // Centroide
+            Point(
+                figures[k].xPromedio+.5 + xDiff, 
+                figures[k].yPromedio+.5
+                ), // Centroide + distancia a la derecha en X
+            Scalar( 255, 0, 0), 2, 8, 0  
+            );
+        line (
+            segmentedImage,
+            Point(
+                figures[k].xPromedio+.5,
+                figures[k].yPromedio+.5
+                ), // Centroide
+            Point(
+                figures[k].xPromedio+.5 + xDiff, // x 
+                figures[k].yPromedio+.5 + xDiff*tan(figures[k].theta) // y
+                ),
+                Scalar( 255, 0, 0), 2, 8, 0  
+            );
+        ellipse( segmentedImage, 
+            Point(
+                figures[k].xPromedio+.5,
+                figures[k].yPromedio+.5 
+                ),
+            Size( xDiff/2, xDiff/2 ), figures[k].theta, -180, figures[k].theta,
+            Scalar( 0, 255, 0 ), 1, 8 );
         /*
             //MOMENTOS NORMALIZADOS
     double n02;
@@ -754,14 +979,14 @@ int main(int argc,char* argv[])
 	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
 
-    // VideoCapture cap(0); // open the default camera
-    // if(!cap.isOpened())  // check if we succeeded
-    //     return -1;
+    VideoCapture cap(0); // open the default camera
+    if(!cap.isOpened())  // check if we succeeded
+        return -1;
     // establishing connection with the quadcopter
-    heli = new CHeli();
+    // heli = new CHeli();
     
-    // this class holds the image from the drone 
-    image = new CRawImage(320,240);
+    // // this class holds the image from the drone 
+    // image = new CRawImage(320,240);
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
@@ -794,7 +1019,7 @@ int main(int argc,char* argv[])
     createTrackbar( "Threshold 2", "Controls", &thresh2, 100, on_trackbar );
     createTrackbar( "Threshold 3", "Controls", &thresh3, 100, on_trackbar );
 
-    //cap >> currentImage;
+    cap >> currentImage;
 
     selectedImage = currentImage;
     while (stop == false)
@@ -822,9 +1047,9 @@ int main(int argc,char* argv[])
         // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
         printf("===================== Parrot Basic Example =====================\n\n");
         fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
         fprintf(stdout, "Hover   : %d \n", hover);
         fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
         fprintf(stdout, "  Roll    : %d \n", joypadRoll);
@@ -836,7 +1061,7 @@ int main(int argc,char* argv[])
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        // cap >> currentImage;
+        cap >> currentImage;
 
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
@@ -956,11 +1181,11 @@ int main(int argc,char* argv[])
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
         imshow("Filtered Image", filteredImage);
                 //Probamos segmentacion
-        segment(filteredImage,segmentedImg);
-        momentos(segmentedImg);
+        // segment(filteredImage,segmentedImg);
+        // momentos(segmentedImg);
         
-        //momentos(segmentedImg);
-        imshow("SEGMENTACION",segmentedImg);
+        // //momentos(segmentedImg);
+        // imshow("SEGMENTACION",segmentedImg);
 
         char key = waitKey(5);
         switch (key) {
@@ -968,17 +1193,24 @@ int main(int argc,char* argv[])
             case 'd': yaw = 20000.0; break;
             case 'w': height = -20000.0; break;
             case 's': height = 20000.0; break;
-            case 'q': heli->takeoff(); break;
-            case 'e': heli->land(); break;
-            case 'z': heli->switchCamera(0); break;
-            case 'x': heli->switchCamera(1); break;
-            case 'c': heli->switchCamera(2); break;
-            case 'v': heli->switchCamera(3); break;
+            // case 'q': heli->takeoff(); break;
+            // case 'e': heli->land(); break;
+            // case 'z': heli->switchCamera(0); break;
+            // case 'x': heli->switchCamera(1); break;
+            // case 'c': heli->switchCamera(2); break;
+            // case 'v': heli->switchCamera(3); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
             case 'i': pitch = -20000.0; break;
             case 'k': pitch = 20000.0; break;
             case 'h': hover = (hover + 1) % 2; break;
+            case 'b': 
+                segment(filteredImage,segmentedImg);
+                momentos(segmentedImg);
+        
+                //momentos(segmentedImg);
+                imshow("SEGMENTACION",segmentedImg);
+            break;
 
             case '1': selected=1; break;
             case '2': selected=2; break;
@@ -988,39 +1220,39 @@ int main(int argc,char* argv[])
             default: pitch = roll = yaw = height = 0.0;
         }
  
-        if (joypadTakeOff) {
-            heli->takeoff();
-        }
-        if (joypadLand) {
-            heli->land();
-        }
+        // if (joypadTakeOff) {
+        //     heli->takeoff();
+        // }
+        // if (joypadLand) {
+        //     heli->land();
+        // }
         hover = joypadHover ? 1 : 0;
 
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
+            // heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
         else
         {
-            heli->setAngles(pitch, roll, yaw, height, hover);
+            // heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
     
         // image is captured
-        heli->renewImage(image);
+        // heli->renewImage(image);
 
-        // Copy to OpenCV Mat
-        rawToMat(currentImage, image);
+        // // Copy to OpenCV Mat
+        // rawToMat(currentImage, image);
         
 
         usleep(15000);
     }
     
-    heli->land();
+    // heli->land();
     SDL_JoystickClose(m_joystick);
-    delete heli;
-    delete image;
+    // delete heli;
+    // delete image;
     return 0;
 }
