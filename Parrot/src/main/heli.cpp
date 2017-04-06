@@ -485,7 +485,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
    
 
     //Variables usadas en este algoritmo
-    int i, j; //Para los ciclos
+    int i, j, y, x; //Para los ciclos
     unsigned int id, k, areaTemp; //Para la idenficacion(id) y color(k) de los segmentos
     //Si la imagen de destino esta vacia, se inicializa
     Vec3b white(255, 255, 255);
@@ -572,46 +572,46 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
     //Comenzamos nuestro analisis pixel por pixel sobre la imagen
      //Inicializamos la matriz color toda en color negro
-    for (i=1; i<binarizedImage.rows-1; i++)
+    for (y=1; y<binarizedImage.rows-1; y++)
     {
-        for (j=1; j<binarizedImage.cols-1; j++)
+        for (x=1; x<binarizedImage.cols-1; x++)
         {
-            if(binarizedImage.at<Vec3b>(i,j)==black)
+            if(binarizedImage.at<Vec3b>(y,x)==black)
             {
                 continue;
             }
 
             else //La imagen orginal tiene un 1
             {
-                Pi=binarizedImage.at<Vec3b>(i,j-1);
-                Ps=binarizedImage.at<Vec3b>(i-1,j);
-                Pc=binarizedImage.at<Vec3b>(i,j);
+                Pi=binarizedImage.at<Vec3b>(y,x-1);
+                Ps=binarizedImage.at<Vec3b>(y-1,x);
+                Pc=binarizedImage.at<Vec3b>(y,x);
 
                 if(Ps==white && Pi == black)
                 {
                     //Propagacion descendiente
-                    idImage[i][j]=idImage[i-1][j];
+                    idImage[y][x]=idImage[y-1][x];
 
                 }
                 else if(Ps==black && Pi == white)
                 {
                     //Propagacion lateral
-                    idImage[i][j]=idImage[i][j-1];
+                    idImage[y][x]=idImage[y][x-1];
                 }
 
                 else if(Ps==white && Pi == white)
                 {
                     //Propagacion indistinta, tenemos que detectar conflicto
-                    if(LUT[idImage[i-1][j]].color != LUT[idImage[i][j-1]].color)
+                    if(LUT[idImage[y-1][x]].color != LUT[idImage[y][x-1]].color)
                     {
 
                         
                         //Region color contendra el color del pixel superior
-                        regionColor=LUT[idImage[i-1][j]].color;
+                        regionColor=LUT[idImage[y-1][x]].color;
 
                         //Borrar dos lineas en caso de error
-                        LUT[idImage[i][j-1]].caracteristicas.area+=LUT[idImage[i-1][j]].caracteristicas.area;
-                        LUT[idImage[i-1][j]].caracteristicas.area=0;
+                        LUT[idImage[y][x-1]].caracteristicas.area+=LUT[idImage[y-1][x]].caracteristicas.area;
+                        LUT[idImage[y-1][x]].caracteristicas.area=0;
                         //Guardamos su tamaño
                         LUTSize=(unsigned int) LUT.size();
 
@@ -625,8 +625,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                                 areaTemp=LUT[k].caracteristicas.area;
                                 LUT.erase(k);
                                    
-                                regionTemp.color=LUT[idImage[i][j-1]].color;
-                                LUT[idImage[i][j-1]].caracteristicas.area+=areaTemp;
+                                regionTemp.color=LUT[idImage[y][x-1]].color;
+                                LUT[idImage[y][x-1]].caracteristicas.area+=areaTemp;
                                 regionTemp.caracteristicas.area=0;
                                 LUT.insert(make_pair(k, regionTemp));
 
@@ -635,7 +635,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     }
 
                     //Propagacion lateral
-                    idImage[i][j]=idImage[i][j-1];
+                    idImage[y][x]=idImage[y][x-1];
                 }
 
                 else if(Ps==black && Pi == black)
@@ -650,7 +650,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     regionTemp.color=regionColor;
                     regionTemp.caracteristicas.area=0;
 
-                    idImage[i][j]=id;
+                    idImage[y][x]=id;
 
                     LUT.insert(make_pair(id, regionTemp));
 
@@ -659,7 +659,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                 }
 
                 //Aumentamos area
-                LUT[idImage[i][j]].caracteristicas.area++;
+                LUT[idImage[y][x]].caracteristicas.area++;
 
 
             }
