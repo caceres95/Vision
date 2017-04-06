@@ -31,14 +31,6 @@ using namespace cv;
 
 #define PI 3.14159265
 
-//Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
-struct region {
-  Vec3b color;
-  unsigned int area;
-
-
-} ;
-
 struct caracterizacion{
     //Estructura con todas los momentos estadisticos que puede tener una figura
     Vec3b color;
@@ -89,6 +81,12 @@ struct caracterizacion{
 
 
 };
+
+//Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
+struct region {
+  Vec3b color;
+  struct caracterizacion caracteristicas;
+} ;
 
 string IntToString (unsigned int a)
 {
@@ -612,8 +610,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                         regionColor=LUT[idImage[i-1][j]].color;
 
                         //Borrar dos lineas en caso de error
-                        LUT[idImage[i][j-1]].area+=LUT[idImage[i-1][j]].area;
-                        LUT[idImage[i-1][j]].area=0;
+                        LUT[idImage[i][j-1]].caracteristicas.area+=LUT[idImage[i-1][j]].caracteristicas.area;
+                        LUT[idImage[i-1][j]].caracteristicas.area=0;
                         //Guardamos su tamaño
                         LUTSize=(unsigned int) LUT.size();
 
@@ -624,12 +622,12 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                             //Quien tenga el color del pixel superior sera cambiado por el color del pixel lateral
                             if(LUT[k].color==regionColor)
                             {
-                                areaTemp=LUT[k].area;
+                                areaTemp=LUT[k].caracteristicas.area;
                                 LUT.erase(k);
                                    
                                 regionTemp.color=LUT[idImage[i][j-1]].color;
-                                LUT[idImage[i][j-1]].area+=areaTemp;
-                                regionTemp.area=0;
+                                LUT[idImage[i][j-1]].caracteristicas.area+=areaTemp;
+                                regionTemp.caracteristicas.area=0;
                                 LUT.insert(make_pair(k, regionTemp));
 
                             }
@@ -650,7 +648,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
                     //Inicializamos una nueva region
                     regionTemp.color=regionColor;
-                    regionTemp.area=0;
+                    regionTemp.caracteristicas.area=0;
 
                     idImage[i][j]=id;
 
@@ -661,7 +659,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                 }
 
                 //Aumentamos area
-                LUT[idImage[i][j]].area++;
+                LUT[idImage[i][j]].caracteristicas.area++;
 
 
             }
