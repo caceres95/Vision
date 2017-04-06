@@ -869,7 +869,12 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265);
         outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
 
+        // Dibujamos sobre "segmentedImage" datos relevantes
+        // centroide
         circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
+        // angulo compuesto de 
+        // dos lineas una horizontal y otra con el angulo al final
+        // y un segmento de circulo para senalar el angulo
         line (
             segmentedImage, 
             Point(
@@ -901,6 +906,20 @@ void momentos(Mat &segmentedImage)
                 ),
             Size( length/2, length/2 ), 0, 0, figures[k].theta*180 / PI,
             Scalar( 0, 255, 0 ), 1, 8 );
+        // Se pone un texto mencionando el angulo en grados
+        ostringstream textStream;
+        textStream << "Rotated ";
+        putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5), 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
+        textStream.str("");
+        textStream << fixed;
+        textStream << setprecision(1);
+        textStream << (-1)*figures[k].theta*180 / PI;
+        textStream <<" Degrees";
+        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5+10), 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
+
         /*
             //MOMENTOS NORMALIZADOS
     double n02;
