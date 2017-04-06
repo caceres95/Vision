@@ -138,6 +138,9 @@ Mat selectedImage;
 int selected = 2;
 string canales = "RGB";
 
+vector<struct caracterizacion> figuresGlobVar;
+string rutina="";
+
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
     {0.114, 0.587, 0.299},
@@ -802,7 +805,7 @@ void momentos(Mat &segmentedImage)
     }
 
     //OBTENEMOS MOMENTOS CENTRALIZADOS (Para estos ya no necesitamos iterar la figura)
-    
+    figuresGlobVar.clear();
     figuresSize=figures.size();
     for( k=0; k<figuresSize; k++)
     {
@@ -845,10 +848,12 @@ void momentos(Mat &segmentedImage)
 
         figures[k].theta=0.5*atan2(2.0*figures[k].u11,figures[k].u20-figures[k].u02);
 
+        figuresGlobVar.push_back(figures[k]);
 
 
 
     }
+
     int length = 50;
     figuresSize=figures.size();
     for( k=0; k<figuresSize; k++)
@@ -932,7 +937,94 @@ void momentos(Mat &segmentedImage)
 
 
 }
+int phis[4][4];
+int phi1X=0, phi2X=0, phi1DevX=0, phi2DevX=0;
+int phi1I=0, phi2I=0, phi1DevI=0, phi2DevI=0;
+int phi1O=0, phi2O=0, phi1DevO=0, phi2DevO=0;
+int phi1L=0, phi2L=0, phi1DevL=0, phi2DevL=0;
 
+void initPhis() {
+    phis[0][0]=phi1X;
+    phis[0][1]=phi2X;
+    phis[0][2]=phi1DevX;
+    phis[0][3]=phi2DevX;
+    phis[0][0]=phi1I;
+    phis[0][1]=phi2I;
+    phis[0][2]=phi1DevI;
+    phis[0][3]=phi2DevI;
+    phis[0][0]=phi1O;
+    phis[0][1]=phi2O;
+    phis[0][2]=phi1DevO;
+    phis[0][3]=phi2DevO;
+    phis[0][0]=phi1L;
+    phis[0][1]=phi2L;
+    phis[0][2]=phi1DevL;
+    phis[0][3]=phi2DevL;
+}
+
+bool isX(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1X-phi1DevX) && figure->phi1 <= (phi1X+phi1DevX) &&
+            figure->phi2 >= (phi2X-phi2DevX) && figure->phi2 <= (phi2X+phi2DevX);
+}
+
+bool isI(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1I-phi1DevI) && figure->phi1 <= (phi1I+phi1DevI) &&
+            figure->phi2 >= (phi2I-phi2DevI) && figure->phi2 <= (phi2I+phi2DevI);
+}
+
+bool isO(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1O-phi1DevO) && figure->phi1 <= (phi1O+phi1DevO) &&
+            figure->phi2 >= (phi2O-phi2DevO) && figure->phi2 <= (phi2O+phi2DevO);
+}
+
+bool isL(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1L-phi1DevL) && figure->phi1 <= (phi1L+phi1DevL) &&
+            figure->phi2 >= (phi2L-phi2DevL) && figure->phi2 <= (phi2L+phi2DevL);
+}
+
+int getDistance(int x1, int y1, int x2, int y2) {
+    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+}
+
+void decision() {
+    int k, i;
+    int smallestDistance=2147483647;
+    int id=0;
+    for(k=0;k<figuresGlobVar.size();k++) {
+        int x=figuresGlobVar[k].phi1;
+        int y=figuresGlobVar[k].phi2;
+        for(i=0;i<4;i++) {
+            if (getDistance(x, y, phis[i][0], phis[i][1]) < smallestDistance) {
+                smallestDistance=getDistance(x, y, phi1X, phi2X);
+                id=i;
+            }
+        }
+        switch(id) {
+            case 0:
+                if (isX(&figuresGlobVar[k])) {
+                    // rutina 1
+                    rutina="rutina1 para X con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+
+                }
+                break;
+            case 1:
+                if (isI(&figuresGlobVar[k])) {
+                    rutina="rutina1 para I con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                }
+                break;
+            case 2:
+                if (isO(&figuresGlobVar[k])) {
+                    rutina="rutina1 para O con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                }
+                break;
+            case 3:
+                if (isL(&figuresGlobVar[k])) {
+                    rutina="rutina1 para L con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                }
+                break;
+        }
+    }
+}
 
 int main(int argc,char* argv[])
 {
@@ -997,7 +1089,8 @@ int main(int argc,char* argv[])
 
 	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
-
+    initPhis();
+    
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
@@ -1094,7 +1187,7 @@ int main(int argc,char* argv[])
         fprintf(stdout, "  Land    : %d \n", joypadLand);
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
-
+        cout<<rutina<<endl;
         cap >> currentImage;
 
 
@@ -1250,6 +1343,7 @@ int main(int argc,char* argv[])
         
                 //momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
+                decision();
             break;
 
             case '1': selected=1; break;
