@@ -912,18 +912,18 @@ void momentos(Mat &segmentedImage)
             Size( length/2, length/2 ), 0, 0, figures[k].theta*180 / PI,
             Scalar( 0, 255, 0 ), 1, 8 );
         // Se pone un texto mencionando el angulo en grados
-        ostringstream textStream;
-        textStream << "Rotated ";
-        putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5), 
-            FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
-        textStream.str("");
-        textStream << fixed;
-        textStream << setprecision(1);
-        textStream << (-1)*figures[k].theta*180 / PI;
-        textStream <<" Degrees";
-        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
-        putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5+10), 
-            FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
+        // ostringstream textStream;
+        // textStream << "Rotated ";
+        // putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5), 
+        //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
+        // textStream.str("");
+        // textStream << fixed;
+        // textStream << setprecision(1);
+        // textStream << (-1)*figures[k].theta*180 / PI;
+        // textStream <<" Degrees";
+        // //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        // putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5+10), 
+        //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
 
         /*
             //MOMENTOS NORMALIZADOS
@@ -947,10 +947,11 @@ void momentos(Mat &segmentedImage)
 // double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 // homeros training
-double phi1X=0.3506333333, phi2X=0.0282839718, phi1DevX=0.0150746467, phi2DevX=0.00374229;
-double phi1I=0.4747663419, phi2I=0.1250041624, phi1DevI=0.0494974802, phi2DevI=0.0267327223;
-double phi1O=0.3696251241, phi2O=0.0084334639, phi1DevO=0.0127183996, phi2DevO=0.005184539;
-double phi1L=0.5470070086, phi2L=0.1604525075, phi1DevL=0.0614094781, phi2DevL=0.0611939424;
+double phi1X=0.3291002434, phi2X=0.0253875885, phi1DevX=0.0288278764, phi2DevX=0.0039292151;
+double phi1I=0.4447836087, phi2I=0.1189788907, phi1DevI=0.0933866007, phi2DevI=0.0359672862;
+double phi1O=0.3228794214, phi2O=0.0094902365, phi1DevO=0.0459546901, phi2DevO=0.0090612347;
+double phi1L=0.5555926979, phi2L=0.1814852988, phi1DevL=0.0224679117, phi2DevL=0.0193219872;
+double phi1R=0.2489313303, phi2R=0.0023523036, phi1DevR=0.0242349705, phi2DevR=0.0040109567;
 
 bool isX(double phi1, double phi2) {
     return phi1 >= (phi1X-phi1DevX) && phi1 <= (phi1X+phi1DevX) &&
@@ -972,10 +973,21 @@ bool isL(double phi1, double phi2) {
             phi2 >= (phi2L-phi2DevL) && phi2 <= (phi2L+phi2DevL);
 }
 
+bool isR(double phi1, double phi2) {
+    return phi1 >= (phi1R-phi1DevR) && phi1 <= (phi1R+phi1DevR) &&
+            phi2 >= (phi2R-phi2DevR) && phi2 <= (phi2R+phi2DevR);
+}
+
 double getDistance(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
 }
 
+string rounded(double value, int precision) {
+    ostringstream os;
+    os << setprecision(precision) << fixed;
+    os << value;
+    return os.str();
+}
 void decision() {
     string rutina="";
     ofstream output("reconocimiento.txt");
@@ -987,26 +999,32 @@ void decision() {
         double dO=getDistance(phi1, phi2, phi1O, phi2O);
         double dI=getDistance(phi1, phi2, phi1I, phi2I);
         double dL=getDistance(phi1, phi2, phi1L, phi2L);
+        double dR=getDistance(phi1, phi2, phi1R, phi2R);
 
-        if (isX(phi1, phi2) && min(min(dX, dO), min(dI, dL)) == dX) {
+        if (isX(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dX) {
             // rutina 1
             // cout << "X" << endl;
-            rutina="rutina1 para X con angulo de " + DoubleToString((-1)*figuresGlobVar[k].theta*180/PI) + " grados";
+            rutina="rutina1 para X con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isI(phi1, phi2) && min(min(dX, dO), min(dI, dL)) == dI) {
+        else if (isI(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dI) {
             // cout << "I" << endl;
-            rutina="rutina1 para I con angulo de " + DoubleToString((-1)*figuresGlobVar[k].theta*180/PI) + " grados";
+            rutina="rutina1 para I con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isO(phi1, phi2) && min(min(dX, dO), min(dI, dL)) == dO) {
+        else if (isO(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dO) {
             // cout << "O" << endl;
-            rutina="rutina1 para O con angulo de " + DoubleToString((-1)*figuresGlobVar[k].theta*180/PI) + " grados";
+            rutina="rutina1 para O con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isL(phi1, phi2) && min(min(dX, dO), min(dI, dL)) == dL) {
+        else if (isL(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dL) {
             // cout << "L" << endl;
-            rutina="rutina1 para L con angulo de " + DoubleToString((-1)*figuresGlobVar[k].theta*180/PI) + " grados";
+            rutina="rutina1 para L con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            output << rutina << endl;
+        }
+        else if (isR(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dR) {
+            // cout << "L" << endl;
+            rutina="rutina1 para R con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
         else {
@@ -1212,7 +1230,10 @@ int main(int argc,char* argv[])
     // (10,10) (380, 10) (700, 10) (1020, 10)
     //         (380, 300) (700, 300) (1020, 300)
     */
-    // moveWindow("Click", 10, 10);
+
+    // createWindows();
+    namedWindow("Click");
+    moveWindow("Click", 10, 10);
     // moveWindow("C1", 380, 300);
     // moveWindow("C2", 700, 300);
     // moveWindow("C3", 1020, 300);
@@ -1280,7 +1301,9 @@ int main(int argc,char* argv[])
         // drawPolygonWithPoints();
 
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
-        // imshow("Click", imagenClick);
+        imshow("Click", imagenClick);
+
+        // histograms();
 
         //BGR to YIQ
         Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
