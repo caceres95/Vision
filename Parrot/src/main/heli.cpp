@@ -140,7 +140,7 @@ Mat selectedImage;
 int selected = 2;
 string canales = "RGB";
 
-vector<struct caracterizacion> figuresGlobVar;
+map<unsigned int,struct caracterizacion> globalFigures;
 
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
@@ -481,6 +481,33 @@ int randomNumber(int min, int max) //range : [min, max)
 
 */
 
+//Esta funcion retorna true si ya existe un elemento
+bool exists(Vec3b color, map<unsigned int, struct caracterizacion> figures) {
+  // somehow I should find whether my MAP has a car
+  // with the name provided
+
+    unsigned int LUTSize, k;
+    LUTSize=(unsigned int) figures.size();
+
+    if(LUTSize==0)
+    {
+        return false;
+    }
+   
+    for (k=0; k<=LUTSize; k++)
+    {
+        if(figures[k].color==color)
+        {
+            return true;
+        }
+
+    }
+
+    return false;
+ 
+
+}
+
 
 void segment(Mat &binarizedImage, Mat &segmentedImage)
 {
@@ -494,7 +521,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     Vec3b black(0, 0, 0);
     Vec3b regionColor;
     Vec3b Pi,Ps, Pc; //Para identificar los tres pixeles analizadores
-    ofstream outputFile("LUT.txt");
+    ofstream outputFile;
+    outputFile.open("LUT.txt", std::ios_base::app);
 
     if (segmentedImage.empty())
     segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
@@ -613,7 +641,27 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
                         //Borrar dos lineas en caso de error
                         LUT[idImage[y][x-1]].caracteristicas.area+=LUT[idImage[y-1][x]].caracteristicas.area;
+                        LUT[idImage[y][x-1]].caracteristicas.m00+=LUT[idImage[y-1][x]].caracteristicas.m00;
+                        LUT[idImage[y][x-1]].caracteristicas.m10+=LUT[idImage[y-1][x]].caracteristicas.m10;
+                        LUT[idImage[y][x-1]].caracteristicas.m20+=LUT[idImage[y-1][x]].caracteristicas.m20;
+                        LUT[idImage[y][x-1]].caracteristicas.m30+=LUT[idImage[y-1][x]].caracteristicas.m30;
+                        LUT[idImage[y][x-1]].caracteristicas.m01+=LUT[idImage[y-1][x]].caracteristicas.m01;
+                        LUT[idImage[y][x-1]].caracteristicas.m02+=LUT[idImage[y-1][x]].caracteristicas.m02;
+                        LUT[idImage[y][x-1]].caracteristicas.m03+=LUT[idImage[y-1][x]].caracteristicas.m03;
+                        LUT[idImage[y][x-1]].caracteristicas.m11+=LUT[idImage[y-1][x]].caracteristicas.m11;
+                        LUT[idImage[y][x-1]].caracteristicas.m12+=LUT[idImage[y-1][x]].caracteristicas.m12;
+                        LUT[idImage[y][x-1]].caracteristicas.m21+=LUT[idImage[y-1][x]].caracteristicas.m21;
                         LUT[idImage[y-1][x]].caracteristicas.area=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m00=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m10=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m20=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m30=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m01=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m02=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m03=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m11=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m12=0;
+                        LUT[idImage[y-1][x]].caracteristicas.m21=0;
                         //Guardamos su tamaño
                         LUTSize=(unsigned int) LUT.size();
 
@@ -623,13 +671,31 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                         {
                             //Quien tenga el color del pixel superior sera cambiado por el color del pixel lateral
                             if(LUT[k].color==regionColor)
-                            {
-                                areaTemp=LUT[k].caracteristicas.area;
-                                LUT.erase(k);
-                                   
+                            {   
                                 regionTemp.color=LUT[idImage[y][x-1]].color;
-                                LUT[idImage[y][x-1]].caracteristicas.area+=areaTemp;
+                                LUT[idImage[y][x-1]].caracteristicas.area+=LUT[k].caracteristicas.area;
+                                LUT[idImage[y][x-1]].caracteristicas.m00+=LUT[k].caracteristicas.m00;
+                                LUT[idImage[y][x-1]].caracteristicas.m10+=LUT[k].caracteristicas.m10;
+                                LUT[idImage[y][x-1]].caracteristicas.m20+=LUT[k].caracteristicas.m20;
+                                LUT[idImage[y][x-1]].caracteristicas.m30+=LUT[k].caracteristicas.m30;
+                                LUT[idImage[y][x-1]].caracteristicas.m01+=LUT[k].caracteristicas.m01;
+                                LUT[idImage[y][x-1]].caracteristicas.m02+=LUT[k].caracteristicas.m02;
+                                LUT[idImage[y][x-1]].caracteristicas.m03+=LUT[k].caracteristicas.m03;
+                                LUT[idImage[y][x-1]].caracteristicas.m11+=LUT[k].caracteristicas.m11;
+                                LUT[idImage[y][x-1]].caracteristicas.m12+=LUT[k].caracteristicas.m12;
+                                LUT[idImage[y][x-1]].caracteristicas.m21+=LUT[k].caracteristicas.m21;
                                 regionTemp.caracteristicas.area=0;
+                                regionTemp.caracteristicas.m00=0;
+                                regionTemp.caracteristicas.m10=0;
+                                regionTemp.caracteristicas.m20=0;
+                                regionTemp.caracteristicas.m30=0;
+                                regionTemp.caracteristicas.m01=0;
+                                regionTemp.caracteristicas.m02=0;
+                                regionTemp.caracteristicas.m03=0;
+                                regionTemp.caracteristicas.m11=0;
+                                regionTemp.caracteristicas.m12=0;
+                                regionTemp.caracteristicas.m21=0;
+                                LUT.erase(k);
                                 LUT.insert(make_pair(k, regionTemp));
 
                             }
@@ -651,7 +717,16 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     //Inicializamos una nueva region
                     regionTemp.color=regionColor;
                     regionTemp.caracteristicas.area=0;
-
+                    regionTemp.caracteristicas.m00=0;
+                    regionTemp.caracteristicas.m10=0;
+                    regionTemp.caracteristicas.m20=0;
+                    regionTemp.caracteristicas.m30=0;
+                    regionTemp.caracteristicas.m01=0;
+                    regionTemp.caracteristicas.m02=0;
+                    regionTemp.caracteristicas.m03=0;
+                    regionTemp.caracteristicas.m11=0;
+                    regionTemp.caracteristicas.m12=0;
+                    regionTemp.caracteristicas.m21=0;
                     idImage[y][x]=id;
 
                     LUT.insert(make_pair(id, regionTemp));
@@ -662,7 +737,16 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
                 //Aumentamos area
                 LUT[idImage[y][x]].caracteristicas.area++;
-
+                LUT[idImage[y][x]].caracteristicas.m00++; /* m00= [sum x sum y] 1 */
+                LUT[idImage[y][x]].caracteristicas.m10+=x; /* m00= [sum x sum y] x */
+                LUT[idImage[y][x]].caracteristicas.m20+=pow(x,2); /* m00= [sum x sum y] x² */
+                LUT[idImage[y][x]].caracteristicas.m30+=pow(x,3); /* m00= [sum x sum y] x³ */
+                LUT[idImage[y][x]].caracteristicas.m01+=y; /* m00= [sum x sum y] y */
+                LUT[idImage[y][x]].caracteristicas.m02+=pow(y,2); /* m00= [sum x sum y] y² */
+                LUT[idImage[y][x]].caracteristicas.m03+=pow(y,3); /* m00= [sum x sum y] y³ */
+                LUT[idImage[y][x]].caracteristicas.m11+=x*y; /* m00= [sum x sum y] x*y */
+                LUT[idImage[y][x]].caracteristicas.m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
+                LUT[idImage[y][x]].caracteristicas.m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
 
             }
         }
@@ -670,7 +754,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     }   
 
 
-    //Coloreamos la imagen en base a los valores de la LUT
+    // //Coloreamos la imagen en base a los valores de la LUT
     for (i=1; i<binarizedImage.rows-1; i++)
     {
         for (j=1; j<binarizedImage.cols-1; j++)
@@ -680,42 +764,69 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
         }
     }
 
+    globalFigures.clear();
     LUTSize=(unsigned int) LUT.size();
-    // Almacenamos tabla
+    struct caracterizacion caracteristicas;
+    // patch by removing duplicates
+    map<unsigned int, struct caracterizacion> tempPatch;
+    vector<unsigned int> indexes;
+    unsigned int colorIndex;
     for( k=1; k<=LUTSize; k++)
     {
-        outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(LUT[k].color[0])<<" "<<IntToString(LUT[k].color[1])<<" "<<IntToString(LUT[k].color[2])<<" Area: "<<IntToString(LUT[k].caracteristicas.area)<<"\n";
-    }
-
-
-
-}
-
-//Esta funcion retorna true si ya existe un elemento
-bool exists(Vec3b color, map<unsigned int, struct caracterizacion> figures) {
-  // somehow I should find whether my MAP has a car
-  // with the name provided
-
-    unsigned int LUTSize, k;
-    LUTSize=(unsigned int) figures.size();
-
-    if(LUTSize==0)
-    {
-        return false;
-    }
-   
-    for (k=0; k<=LUTSize; k++)
-    {
-        if(figures[k].color==color)
-        {
-            return true;
+        colorIndex=(unsigned int)((LUT[k].color[0]+LUT[k].color[1]+LUT[k].color[2])/3*100);
+        if (colorIndex) {
+            if ( tempPatch.find(colorIndex) == tempPatch.end() ) {
+                caracteristicas.color=LUT[k].color;
+                caracteristicas.area=LUT[k].caracteristicas.area;
+                caracteristicas.m00=LUT[k].caracteristicas.m00;
+                caracteristicas.m10=LUT[k].caracteristicas.m10;
+                caracteristicas.m20=LUT[k].caracteristicas.m20;
+                caracteristicas.m30=LUT[k].caracteristicas.m30;
+                caracteristicas.m01=LUT[k].caracteristicas.m01;
+                caracteristicas.m02=LUT[k].caracteristicas.m02;
+                caracteristicas.m03=LUT[k].caracteristicas.m03;
+                caracteristicas.m11=LUT[k].caracteristicas.m11;
+                caracteristicas.m12=LUT[k].caracteristicas.m12;
+                caracteristicas.m21=LUT[k].caracteristicas.m21;
+                // not found
+                indexes.push_back(colorIndex);
+                tempPatch.insert(make_pair(colorIndex, caracteristicas));
+            } else {
+                 // found
+                tempPatch[colorIndex].area+=LUT[k].caracteristicas.area;
+                tempPatch[colorIndex].m00+=LUT[k].caracteristicas.m00;
+                tempPatch[colorIndex].m10+=LUT[k].caracteristicas.m10;
+                tempPatch[colorIndex].m20+=LUT[k].caracteristicas.m20;
+                tempPatch[colorIndex].m30+=LUT[k].caracteristicas.m30;
+                tempPatch[colorIndex].m01+=LUT[k].caracteristicas.m01;
+                tempPatch[colorIndex].m02+=LUT[k].caracteristicas.m02;
+                tempPatch[colorIndex].m03+=LUT[k].caracteristicas.m03;
+                tempPatch[colorIndex].m11+=LUT[k].caracteristicas.m11;
+                tempPatch[colorIndex].m12+=LUT[k].caracteristicas.m12;
+                tempPatch[colorIndex].m21+=LUT[k].caracteristicas.m21;
+            }
         }
-
     }
 
-    return false;
- 
-
+    // Almacenamos tabla  
+    for( k=0; k<indexes.size(); k++)
+    {
+        caracteristicas.color=tempPatch[indexes[k]].color;
+        caracteristicas.area=tempPatch[indexes[k]].area;
+        caracteristicas.m00=tempPatch[indexes[k]].m00;
+        caracteristicas.m10=tempPatch[indexes[k]].m10;
+        caracteristicas.m20=tempPatch[indexes[k]].m20;
+        caracteristicas.m30=tempPatch[indexes[k]].m30;
+        caracteristicas.m01=tempPatch[indexes[k]].m01;
+        caracteristicas.m02=tempPatch[indexes[k]].m02;
+        caracteristicas.m03=tempPatch[indexes[k]].m03;
+        caracteristicas.m11=tempPatch[indexes[k]].m11;
+        caracteristicas.m12=tempPatch[indexes[k]].m12;
+        caracteristicas.m21=tempPatch[indexes[k]].m21;
+        globalFigures.insert(make_pair(k, caracteristicas));
+        outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(tempPatch[indexes[k]].color[0])<<" "<<IntToString(tempPatch[indexes[k]].color[1])<<" "<<IntToString(tempPatch[indexes[k]].color[2])<<" Area: "<<IntToString(tempPatch[indexes[k]].area)<<"\n";
+    }
+    outputFile.close();
 }
 
 unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion> figures)
@@ -746,184 +857,180 @@ void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
     unsigned long long i, j,x,y;
-    map<unsigned int,struct caracterizacion> figures;
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
-    ofstream outputFile("figures.txt");
+    ofstream outputFile;
+    outputFile.open("figures.txt", std::ios_base::app);
+
 
         //Coloreamos la imagen en base a los valores de la LUT
-    for (x=0; x<segmentedImage.cols; x++)
-    {
-        for (y=0; y<segmentedImage.rows; y++)
-        {
-            if(segmentedImage.at<Vec3b>(y, x)!=black)
-            {
-                //Existe este color en la tabla de figuras?
-                if(!exists(segmentedImage.at<Vec3b>(y, x),figures))
-                {
-                    //No existe, crea un nuevo id
-                    caracteristicas.color=segmentedImage.at<Vec3b>(y, x);
-                    caracteristicas.area=0;
-                    caracteristicas.m00=0;
-                    caracteristicas.m10=0;
-                    caracteristicas.m20=0;
-                    caracteristicas.m30=0;
-                    caracteristicas.m01=0;
-                    caracteristicas.m02=0;
-                    caracteristicas.m03=0;
-                    caracteristicas.m11=0;
-                    caracteristicas.m12=0;
-                    caracteristicas.m21=0;
+    // for (x=0; x<segmentedImage.cols; x++)
+    // {
+    //     for (y=0; y<segmentedImage.rows; y++)
+    //     {
+    //         if(segmentedImage.at<Vec3b>(y, x)!=black)
+    //         {
+    //             //Existe este color en la tabla de figuras?
+    //             if(!exists(segmentedImage.at<Vec3b>(y, x),figures))
+    //             {
+    //                 //No existe, crea un nuevo id
+    //                 caracteristicas.color=segmentedImage.at<Vec3b>(y, x);
+    //                 caracteristicas.area=0;
+    //                 caracteristicas.m00=0;
+    //                 caracteristicas.m10=0;
+    //                 caracteristicas.m20=0;
+    //                 caracteristicas.m30=0;
+    //                 caracteristicas.m01=0;
+    //                 caracteristicas.m02=0;
+    //                 caracteristicas.m03=0;
+    //                 caracteristicas.m11=0;
+    //                 caracteristicas.m12=0;
+    //                 caracteristicas.m21=0;
 
-                    figures.insert(make_pair(id, caracteristicas));
-                    id++;
-                }
+    //                 figures.insert(make_pair(id, caracteristicas));
+    //                 id++;
+    //             }
 
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
                 /*
                 AGREGAR SUMATORIAS EN ESTE CAMPO
                 Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
                 */
                 /*SE COMIENZAN A OBTENER MOMENTOS ORDINARIOS*/
 
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m00++; /* m00= [sum x sum y] 1 */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m10+=x; /* m00= [sum x sum y] x */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m20+=pow(x,2); /* m00= [sum x sum y] x² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m30+=pow(x,3); /* m00= [sum x sum y] x³ */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m01+=y; /* m00= [sum x sum y] y */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m02+=pow(y,2); /* m00= [sum x sum y] y² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m03+=pow(y,3); /* m00= [sum x sum y] y³ */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
-                figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m00++; /* m00= [sum x sum y] 1 */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m10+=x; /* m00= [sum x sum y] x */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m20+=pow(x,2); /* m00= [sum x sum y] x² */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m30+=pow(x,3); /* m00= [sum x sum y] x³ */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m01+=y; /* m00= [sum x sum y] y */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m02+=pow(y,2); /* m00= [sum x sum y] y² */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m03+=pow(y,3); /* m00= [sum x sum y] y³ */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
+    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
 
-            }
+    //         }
 
-        }
-    }
+    //     }
+    // }
 
     //OBTENEMOS MOMENTOS CENTRALIZADOS (Para estos ya no necesitamos iterar la figura)
-    figuresGlobVar.clear();
-    figuresSize=figures.size();
+    figuresSize=globalFigures.size();
     for( k=0; k<figuresSize; k++)
     {
         //OBTENEMOS PROMEDIOS
-        figures[k].xPromedio=((double)figures[k].m10)/((double)figures[k].m00);
-        figures[k].yPromedio=((double)figures[k].m01)/((double)figures[k].m00);
+        globalFigures[k].xPromedio=((double)globalFigures[k].m10)/((double)globalFigures[k].m00);
+        globalFigures[k].yPromedio=((double)globalFigures[k].m01)/((double)globalFigures[k].m00);
 
         
         //Primer Orden
-        figures[k].u00=figures[k].m00;
-        figures[k].u10=0;
-        figures[k].u01=0;
+        globalFigures[k].u00=globalFigures[k].m00;
+        globalFigures[k].u10=0;
+        globalFigures[k].u01=0;
 
         //Segundo Orden
-        figures[k].u20=(double)figures[k].m20-figures[k].xPromedio*(double)figures[k].m10;
-        figures[k].u02=(double)figures[k].m02-figures[k].yPromedio*(double)figures[k].m01;
-        figures[k].u11=(double)figures[k].m11-figures[k].yPromedio*(double)figures[k].m10;
+        globalFigures[k].u20=(double)globalFigures[k].m20-globalFigures[k].xPromedio*(double)globalFigures[k].m10;
+        globalFigures[k].u02=(double)globalFigures[k].m02-globalFigures[k].yPromedio*(double)globalFigures[k].m01;
+        globalFigures[k].u11=(double)globalFigures[k].m11-globalFigures[k].yPromedio*(double)globalFigures[k].m10;
         
         //Tercer Orden
-        figures[k].u30=(double)figures[k].m30-3*figures[k].xPromedio*(double)figures[k].m20+2*pow(figures[k].xPromedio,2)*(double)figures[k].m10;
-        figures[k].u03=(double)figures[k].m03-3*figures[k].yPromedio*(double)figures[k].m02+2*pow(figures[k].yPromedio,2)*(double)figures[k].m01;
+        globalFigures[k].u30=(double)globalFigures[k].m30-3*globalFigures[k].xPromedio*(double)globalFigures[k].m20+2*pow(globalFigures[k].xPromedio,2)*(double)globalFigures[k].m10;
+        globalFigures[k].u03=(double)globalFigures[k].m03-3*globalFigures[k].yPromedio*(double)globalFigures[k].m02+2*pow(globalFigures[k].yPromedio,2)*(double)globalFigures[k].m01;
 
-        figures[k].u12=(double)figures[k].m12-2*figures[k].yPromedio*(double)figures[k].m11-figures[k].xPromedio*(double)figures[k].m02+2*pow(figures[k].yPromedio,2)*(double)figures[k].m10;
-        figures[k].u21=(double)figures[k].m21-2*figures[k].xPromedio*(double)figures[k].m11-figures[k].yPromedio*(double)figures[k].m20+2*pow(figures[k].xPromedio,2)*(double)figures[k].m01;
+        globalFigures[k].u12=(double)globalFigures[k].m12-2*globalFigures[k].yPromedio*(double)globalFigures[k].m11-globalFigures[k].xPromedio*(double)globalFigures[k].m02+2*pow(globalFigures[k].yPromedio,2)*(double)globalFigures[k].m10;
+        globalFigures[k].u21=(double)globalFigures[k].m21-2*globalFigures[k].xPromedio*(double)globalFigures[k].m11-globalFigures[k].yPromedio*(double)globalFigures[k].m20+2*pow(globalFigures[k].xPromedio,2)*(double)globalFigures[k].m01;
 
         //Momentos Invariantes
-        figures[k].n02=figures[k].u02/(pow((double)figures[k].m00,2.0));
-        figures[k].n03=figures[k].u03/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
-        figures[k].n11=figures[k].u11/(pow((double)figures[k].m00,((double)2/(double)2)+1.0));
-        figures[k].n12=figures[k].u12/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
-        figures[k].n20=figures[k].u20/(pow((double)figures[k].m00,((double)2/(double)2)+1.0));
-        figures[k].n21=figures[k].u21/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
-        figures[k].n30=figures[k].u30/(pow((double)figures[k].m00,((double)3/(double)2)+1.0));
+        globalFigures[k].n02=globalFigures[k].u02/(pow((double)globalFigures[k].m00,2.0));
+        globalFigures[k].n03=globalFigures[k].u03/(pow((double)globalFigures[k].m00,((double)3/(double)2)+1.0));
+        globalFigures[k].n11=globalFigures[k].u11/(pow((double)globalFigures[k].m00,((double)2/(double)2)+1.0));
+        globalFigures[k].n12=globalFigures[k].u12/(pow((double)globalFigures[k].m00,((double)3/(double)2)+1.0));
+        globalFigures[k].n20=globalFigures[k].u20/(pow((double)globalFigures[k].m00,((double)2/(double)2)+1.0));
+        globalFigures[k].n21=globalFigures[k].u21/(pow((double)globalFigures[k].m00,((double)3/(double)2)+1.0));
+        globalFigures[k].n30=globalFigures[k].u30/(pow((double)globalFigures[k].m00,((double)3/(double)2)+1.0));
 
         //MOMENTOS de HU
-        figures[k].phi1=figures[k].n20+figures[k].n02;
-        figures[k].phi2=pow(figures[k].n20-figures[k].n02,2)+4*pow(figures[k].n11,2);
-        figures[k].phi3=pow(figures[k].n30-3*figures[k].n12,2)+pow(3*figures[k].n21-figures[k].n03,2);
-        figures[k].phi4=pow(figures[k].n30+figures[k].n12,2)+pow(figures[k].n21+figures[k].n03,2);
+        globalFigures[k].phi1=globalFigures[k].n20+globalFigures[k].n02;
+        globalFigures[k].phi2=pow(globalFigures[k].n20-globalFigures[k].n02,2)+4*pow(globalFigures[k].n11,2);
+        globalFigures[k].phi3=pow(globalFigures[k].n30-3*globalFigures[k].n12,2)+pow(3*globalFigures[k].n21-globalFigures[k].n03,2);
+        globalFigures[k].phi4=pow(globalFigures[k].n30+globalFigures[k].n12,2)+pow(globalFigures[k].n21+globalFigures[k].n03,2);
 
-        figures[k].theta=0.5*atan2(2.0*figures[k].u11,figures[k].u20-figures[k].u02);
-
-        figuresGlobVar.push_back(figures[k]);
-
-
+        globalFigures[k].theta=0.5*atan2(2.0*globalFigures[k].u11,globalFigures[k].u20-globalFigures[k].u02);
 
     }
 
     int length = 50;
-    figuresSize=figures.size();
+    figuresSize=globalFigures.size();
     for( k=0; k<figuresSize; k++)
     {
-        outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(figures[k].color[0])<<" "<<IntToString(figures[k].color[1])<<" "<<IntToString(figures[k].color[2])<<" | Area: "<<IntToString(figures[k].area)<<" ";
-        outputFile<<"| m00: "<<IntToString(figures[k].m00)<<" | m10: "<<IntToString(figures[k].m10)<<" | m20: "<<IntToString(figures[k].m20)<<" | m30: "<<IntToString(figures[k].m30);
-        outputFile<<" | m01: "<<IntToString(figures[k].m01)<<" | m02: "<<IntToString(figures[k].m02)<<" | m03: "<<IntToString(figures[k].m03);
-        outputFile<<" | m11: "<<IntToString(figures[k].m11)<<" | m12: "<<IntToString(figures[k].m12)<<" | m21: "<<IntToString(figures[k].m21)<<" | XProm: "<<DoubleToString(figures[k].xPromedio)<<" | YProm: "<<DoubleToString(figures[k].yPromedio)<<" ";
-        outputFile<<" | u10: "<<IntToString(figures[k].u10)<<" | u01: "<<IntToString(figures[k].u01)<<" | u20: "<<DoubleToString(figures[k].u20);
-        outputFile<<" | u02: "<<DoubleToString(figures[k].u02)<<" | u11: "<<DoubleToString(figures[k].u11)<<" | u30: "<<DoubleToString(figures[k].u30);
-        outputFile<<" | u03: "<<DoubleToString(figures[k].u03)<<" | u12: "<<DoubleToString(figures[k].u12)<<" | u21: "<<DoubleToString(figures[k].u21);
-        outputFile<<" | n02: "<<DoubleToString(figures[k].n02)<<" | n03: "<<DoubleToString(figures[k].n03)<<" | n11: "<<DoubleToString(figures[k].n11);
-        outputFile<<" | n12: "<<DoubleToString(figures[k].n12)<<" | n20: "<<DoubleToString(figures[k].n20)<<" | n21: "<<DoubleToString(figures[k].n21);
-        outputFile<<" | n30: "<<DoubleToString(figures[k].n30)<<" | phi1: "<<DoubleToString(figures[k].phi1)<<" | phi2: "<<DoubleToString(figures[k].phi2);
-        outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta);
-        outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265);
-        outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
+        outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(globalFigures[k].color[0])<<" "<<IntToString(globalFigures[k].color[1])<<" "<<IntToString(globalFigures[k].color[2])<<" | Area: "<<IntToString(globalFigures[k].area)<<" ";
+        outputFile<<"| m00: "<<IntToString(globalFigures[k].m00)<<" | m10: "<<IntToString(globalFigures[k].m10)<<" | m20: "<<IntToString(globalFigures[k].m20)<<" | m30: "<<IntToString(globalFigures[k].m30);
+        outputFile<<" | m01: "<<IntToString(globalFigures[k].m01)<<" | m02: "<<IntToString(globalFigures[k].m02)<<" | m03: "<<IntToString(globalFigures[k].m03);
+        outputFile<<" | m11: "<<IntToString(globalFigures[k].m11)<<" | m12: "<<IntToString(globalFigures[k].m12)<<" | m21: "<<IntToString(globalFigures[k].m21)<<" | XProm: "<<DoubleToString(globalFigures[k].xPromedio)<<" | YProm: "<<DoubleToString(globalFigures[k].yPromedio)<<" ";
+        outputFile<<" | u10: "<<IntToString(globalFigures[k].u10)<<" | u01: "<<IntToString(globalFigures[k].u01)<<" | u20: "<<DoubleToString(globalFigures[k].u20);
+        outputFile<<" | u02: "<<DoubleToString(globalFigures[k].u02)<<" | u11: "<<DoubleToString(globalFigures[k].u11)<<" | u30: "<<DoubleToString(globalFigures[k].u30);
+        outputFile<<" | u03: "<<DoubleToString(globalFigures[k].u03)<<" | u12: "<<DoubleToString(globalFigures[k].u12)<<" | u21: "<<DoubleToString(globalFigures[k].u21);
+        outputFile<<" | n02: "<<DoubleToString(globalFigures[k].n02)<<" | n03: "<<DoubleToString(globalFigures[k].n03)<<" | n11: "<<DoubleToString(globalFigures[k].n11);
+        outputFile<<" | n12: "<<DoubleToString(globalFigures[k].n12)<<" | n20: "<<DoubleToString(globalFigures[k].n20)<<" | n21: "<<DoubleToString(globalFigures[k].n21);
+        outputFile<<" | n30: "<<DoubleToString(globalFigures[k].n30)<<" | phi1: "<<DoubleToString(globalFigures[k].phi1)<<" | phi2: "<<DoubleToString(globalFigures[k].phi2);
+        outputFile<<" | phi3: "<<DoubleToString(globalFigures[k].phi3)<<" | phi4: "<<DoubleToString(globalFigures[k].phi4)<<" | theta: "<<DoubleToString(globalFigures[k].theta);
+        outputFile<<" | Degrees: "<<DoubleToString(globalFigures[k].theta*180 / 3.14159265);
+        outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
 
         // For training!
-        // cout << DoubleToString(figures[k].phi1)<<" "<<DoubleToString(figures[k].phi2) << endl;
+        // cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
         //
 
         // Dibujamos sobre "segmentedImage" datos relevantes
         // centroide
-        circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
+        circle (segmentedImage, Point(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
         // angulo compuesto de 
         // dos lineas una horizontal y otra con el angulo al final
         // y un segmento de circulo para senalar el angulo
         line (
             segmentedImage, 
             Point(
-                figures[k].xPromedio+.5, 
-                figures[k].yPromedio+.5
+                globalFigures[k].xPromedio+.5, 
+                globalFigures[k].yPromedio+.5
                 ), // Centroide
             Point(
-                figures[k].xPromedio+.5 + length*cos(figures[k].theta), 
-                figures[k].yPromedio+.5
+                globalFigures[k].xPromedio+.5 + length*cos(globalFigures[k].theta), 
+                globalFigures[k].yPromedio+.5
                 ), // Centroide + distancia a la derecha en X
             Scalar( 255, 0, 0), 2, 8, 0  
             );
         line (
             segmentedImage,
             Point(
-                figures[k].xPromedio+.5,
-                figures[k].yPromedio+.5
+                globalFigures[k].xPromedio+.5,
+                globalFigures[k].yPromedio+.5
                 ), // Centroide
             Point(
-                figures[k].xPromedio+.5 + length*cos(figures[k].theta), // x 
-                figures[k].yPromedio+.5 + length*sin(figures[k].theta) // y
+                globalFigures[k].xPromedio+.5 + length*cos(globalFigures[k].theta), // x 
+                globalFigures[k].yPromedio+.5 + length*sin(globalFigures[k].theta) // y
                 ),
                 Scalar( 255, 0, 0), 2, 8, 0  
             );
         ellipse( segmentedImage, 
             Point(
-                figures[k].xPromedio+.5,
-                figures[k].yPromedio+.5 
+                globalFigures[k].xPromedio+.5,
+                globalFigures[k].yPromedio+.5 
                 ),
-            Size( length/2, length/2 ), 0, 0, figures[k].theta*180 / PI,
+            Size( length/2, length/2 ), 0, 0, globalFigures[k].theta*180 / PI,
             Scalar( 0, 255, 0 ), 1, 8 );
         // Se pone un texto mencionando el angulo en grados
         // ostringstream textStream;
         // textStream << "Rotated ";
-        // putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5), 
+        // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5), 
         //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
         // textStream.str("");
         // textStream << fixed;
         // textStream << setprecision(1);
-        // textStream << (-1)*figures[k].theta*180 / PI;
+        // textStream << (-1)*globalFigures[k].theta*180 / PI;
         // textStream <<" Degrees";
         // //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
-        // putText(segmentedImage, textStream.str(), cvPoint(figures[k].xPromedio+.5,figures[k].yPromedio+.5+10), 
+        // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5+10), 
         //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
 
         /*
@@ -937,7 +1044,7 @@ void momentos(Mat &segmentedImage)
     double n30;
     */
     }
-
+    outputFile.close();
 
 }
 
@@ -950,7 +1057,7 @@ void momentos(Mat &segmentedImage)
 // homeros training
 double phi1X=0.3291002434, phi2X=0.0253875885, phi1DevX=0.0288278764, phi2DevX=0.0039292151;
 double phi1I=0.4447836087, phi2I=0.1189788907, phi1DevI=0.0933866007, phi2DevI=0.0359672862;
-double phi1O=0.3228794214, phi2O=0.0094902365, phi1DevO=0.0459546901, phi2DevO=0.0090612347;
+double phi1O=0.3648078675, phi2O=0.0098792798, phi1DevO=0.0100242852, phi2DevO=0.0010190414;
 double phi1L=0.5555926979, phi2L=0.1814852988, phi1DevL=0.0224679117, phi2DevL=0.0193219872;
 double phi1R=0.2489313303, phi2R=0.0023523036, phi1DevR=0.0242349705, phi2DevR=0.0040109567;
 double phi1Deadmau5=0.1995033381, phi2Deadmau5=0.003130226, phi1DevDeadmau5=0.0025950912, phi2DevDeadmau5=0.0005943853;
@@ -1013,9 +1120,9 @@ void classification() {
     string rutina="";
     // ofstream output("reconocimiento.txt");
     int k;
-    for(k=0;k<figuresGlobVar.size();k++) {
-        double phi1=figuresGlobVar[k].phi1;
-        double phi2=figuresGlobVar[k].phi2;
+    for(k=0;k<globalFigures.size();k++) {
+        double phi1=globalFigures[k].phi1;
+        double phi2=globalFigures[k].phi2;
         double dX=getDistance(phi1, phi2, phi1X, phi2X);
         double dO=getDistance(phi1, phi2, phi1O, phi2O);
         double dI=getDistance(phi1, phi2, phi1I, phi2I);
@@ -1032,44 +1139,44 @@ void classification() {
         distances[5]=dDeadmau5;
 
         if (isX(phi1, phi2) && getMinFromArray(distances, size) == dX) {
-            figuresGlobVar[k].whatitis="X";
+            globalFigures[k].whatitis="X";
             // rutina 1
             // cout << "X" << endl;
-            // rutina="rutina1 para X con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para X con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else if (isI(phi1, phi2) && getMinFromArray(distances, size) == dI) {
-            figuresGlobVar[k].whatitis="I";
+            globalFigures[k].whatitis="I";
             // cout << "I" << endl;
-            // rutina="rutina1 para I con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para I con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else if (isO(phi1, phi2) && getMinFromArray(distances, size) == dO) {
-            figuresGlobVar[k].whatitis="O";
+            globalFigures[k].whatitis="O";
             // cout << "O" << endl;
-            // rutina="rutina1 para O con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para O con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else if (isL(phi1, phi2) && getMinFromArray(distances, size) == dL) {
-            figuresGlobVar[k].whatitis="L";
+            globalFigures[k].whatitis="L";
             // cout << "L" << endl;
-            // rutina="rutina1 para L con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para L con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else if (isR(phi1, phi2) && getMinFromArray(distances, size) == dR) {
-            figuresGlobVar[k].whatitis="R";
+            globalFigures[k].whatitis="R";
             // cout << "L" << endl;
-            // rutina="rutina1 para R con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para R con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else if (isDeadmau5(phi1, phi2) && getMinFromArray(distances, size) == dDeadmau5) {
-            figuresGlobVar[k].whatitis="Deadmau5";
+            globalFigures[k].whatitis="Deadmau5";
             // cout << "L" << endl;
-            // rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
             // output << rutina << endl;
         }
         else {
-            figuresGlobVar[k].whatitis="Unknown";
+            globalFigures[k].whatitis="Unknown";
             // cout << "desconocido" << endl;
             // rutina="objeto desconocido";
             // output << rutina << endl;
@@ -1188,16 +1295,16 @@ void phisPlot() {
             phis.at<Vec3b>(i, j)=black;
         }
     }
-    for(k=0;k<figuresGlobVar.size();k++) {
-        Scalar color(figuresGlobVar[k].color);
-        circle (phis, Point((int)(figuresGlobVar[k].phi1*selectedImage.cols),(selectedImage.rows)-(int)(figuresGlobVar[k].phi2*selectedImage.rows)),5,color,CV_FILLED);
+    for(k=0;k<globalFigures.size();k++) {
+        Scalar color(globalFigures[k].color);
+        circle (phis, Point((int)(globalFigures[k].phi1*selectedImage.cols),(selectedImage.rows)-(int)(globalFigures[k].phi2*selectedImage.rows)),5,color,CV_FILLED);
     }
     int y=10;
-    for(k=0;k<figuresGlobVar.size();k++, y+=10) {
-        Scalar color(figuresGlobVar[k].color);
-        circle (phis, Point(10, y),5,color,CV_FILLED);
+    for(k=0;k<globalFigures.size();k++, y+=10) {
+        Scalar color(globalFigures[k].color);
+        circle (phis, Point(20, y-5),5,color,CV_FILLED);
         ostringstream textStream;
-        textStream<<"("<<rounded(figuresGlobVar[k].phi1, 6)<<", "<<rounded(figuresGlobVar[k].phi2, 6)<<")"<<" "<<figuresGlobVar[k].whatitis;
+        textStream<<"("<<rounded(globalFigures[k].phi1, 6)<<", "<<rounded(globalFigures[k].phi2, 6)<<")"<<" "<<globalFigures[k].whatitis;
         //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(phis, textStream.str(), Point(40, y), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
@@ -1268,6 +1375,12 @@ int main(int argc,char* argv[])
 
 	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
+    //CLEAR FILES
+    ofstream outputLUT("LUT.txt");
+    outputLUT.close();
+    ofstream outputFigures("figures.txt");
+    outputFigures.close();
+
     VideoCapture cap(0); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
@@ -1310,9 +1423,10 @@ int main(int argc,char* argv[])
     // moveWindow("C2", 700, 300);
     // moveWindow("C3", 1020, 300);
     // moveWindow("Controls", 1020, 10);
-
+    namedWindow("Phis (phi1, phi2)");
     namedWindow("Filtered Image");
     namedWindow("SEGMENTACION");
+    moveWindow("Phis (phi1, phi2)", 1020, 10);
     moveWindow("Filtered Image", 380, 10);
     moveWindow("SEGMENTACION", 700, 10);
 
