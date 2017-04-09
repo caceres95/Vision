@@ -1134,6 +1134,35 @@ void histograms() {
         imshow("C3", histImageC3 );
 }
 
+void phisPlot() {
+    Mat phis = Mat(selectedImage.rows, selectedImage.cols, selectedImage.type());
+    Vec3b black(0, 0, 0);
+    int i,j,k;
+    //Inicializamos la matriz color toda en color negro
+    for (i=0; i<selectedImage.rows; i++)
+    {
+        for (j=0; j<selectedImage.cols; j++)
+        {
+            phis.at<Vec3b>(i, j)=black;
+        }
+    }
+    for(k=0;k<figuresGlobVar.size();k++) {
+        Scalar color(figuresGlobVar[k].color);
+        circle (phis, Point((int)(figuresGlobVar[k].phi1*selectedImage.cols),(selectedImage.rows)-(int)(figuresGlobVar[k].phi2*selectedImage.rows)),5,color,CV_FILLED);
+    }
+    int y=10;
+    for(k=0;k<figuresGlobVar.size();k++, y+=10) {
+        Scalar color(figuresGlobVar[k].color);
+        circle (phis, Point(10, y),5,color,CV_FILLED);
+        ostringstream textStream;
+        textStream<<"("<<rounded(figuresGlobVar[k].phi1, 6)<<", "<<rounded(figuresGlobVar[k].phi2, 6)<<")";
+        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        putText(phis, textStream.str(), Point(40, y), 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
+    }
+    imshow("Phis (phi1, phi2)", phis);
+}
+
 int main(int argc,char* argv[])
 {
 
@@ -1303,6 +1332,7 @@ int main(int argc,char* argv[])
         if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
         imshow("Click", imagenClick);
 
+        // Histogram
         // histograms();
 
         //BGR to YIQ
@@ -1319,8 +1349,6 @@ int main(int argc,char* argv[])
             case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
             case 3: selectedImage = hsv; canales="HSV"; break;
         }
-        // Histogram
-        
 
         // Blur image
         blur(selectedImage,selectedImage,Size(3,3)); 
@@ -1330,6 +1358,9 @@ int main(int argc,char* argv[])
         segment(filteredImage,segmentedImg);
         momentos(segmentedImg);
         imshow("SEGMENTACION",segmentedImg);
+        // draw phis
+        phisPlot();
+        // take decision
         decision();
 
         char key = waitKey(5);
