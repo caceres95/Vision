@@ -36,6 +36,7 @@ struct caracterizacion{
     //Estructura con todas los momentos estadisticos que puede tener una figura
     Vec3b color;
     unsigned int area;
+    string whatitis;
     //MOMENTOS ORDINARIOS
     unsigned long long m00;
     unsigned long long m10;
@@ -996,15 +997,21 @@ double getMinFromArray(double *array, int size) {
     }
     return smallest;
 }
+
 string rounded(double value, int precision) {
     ostringstream os;
     os << setprecision(precision) << fixed;
     os << value;
     return os.str();
 }
+
 void decision() {
+
+}
+
+void classification() {
     string rutina="";
-    ofstream output("reconocimiento.txt");
+    // ofstream output("reconocimiento.txt");
     int k;
     for(k=0;k<figuresGlobVar.size();k++) {
         double phi1=figuresGlobVar[k].phi1;
@@ -1025,40 +1032,47 @@ void decision() {
         distances[5]=dDeadmau5;
 
         if (isX(phi1, phi2) && getMinFromArray(distances, size) == dX) {
+            figuresGlobVar[k].whatitis="X";
             // rutina 1
             // cout << "X" << endl;
-            rutina="rutina1 para X con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para X con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else if (isI(phi1, phi2) && getMinFromArray(distances, size) == dI) {
+            figuresGlobVar[k].whatitis="I";
             // cout << "I" << endl;
-            rutina="rutina1 para I con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para I con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else if (isO(phi1, phi2) && getMinFromArray(distances, size) == dO) {
+            figuresGlobVar[k].whatitis="O";
             // cout << "O" << endl;
-            rutina="rutina1 para O con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para O con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else if (isL(phi1, phi2) && getMinFromArray(distances, size) == dL) {
+            figuresGlobVar[k].whatitis="L";
             // cout << "L" << endl;
-            rutina="rutina1 para L con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para L con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else if (isR(phi1, phi2) && getMinFromArray(distances, size) == dR) {
+            figuresGlobVar[k].whatitis="R";
             // cout << "L" << endl;
-            rutina="rutina1 para R con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para R con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else if (isDeadmau5(phi1, phi2) && getMinFromArray(distances, size) == dDeadmau5) {
+            figuresGlobVar[k].whatitis="Deadmau5";
             // cout << "L" << endl;
-            rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
-            output << rutina << endl;
+            // rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            // output << rutina << endl;
         }
         else {
+            figuresGlobVar[k].whatitis="Unknown";
             // cout << "desconocido" << endl;
-            rutina="objeto desconocido";
-            output << rutina << endl;
+            // rutina="objeto desconocido";
+            // output << rutina << endl;
         }
     }
 }
@@ -1183,7 +1197,7 @@ void phisPlot() {
         Scalar color(figuresGlobVar[k].color);
         circle (phis, Point(10, y),5,color,CV_FILLED);
         ostringstream textStream;
-        textStream<<"("<<rounded(figuresGlobVar[k].phi1, 6)<<", "<<rounded(figuresGlobVar[k].phi2, 6)<<")";
+        textStream<<"("<<rounded(figuresGlobVar[k].phi1, 6)<<", "<<rounded(figuresGlobVar[k].phi2, 6)<<")"<<" "<<figuresGlobVar[k].whatitis;
         //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(phis, textStream.str(), Point(40, y), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
@@ -1290,6 +1304,7 @@ int main(int argc,char* argv[])
 
     // createWindows();
     namedWindow("Click");
+    setMouseCallback("Click", mouseCoordinatesExampleCallback);
     moveWindow("Click", 10, 10);
     // moveWindow("C1", 380, 300);
     // moveWindow("C2", 700, 300);
@@ -1386,6 +1401,7 @@ int main(int argc,char* argv[])
         segment(filteredImage,segmentedImg);
         momentos(segmentedImg);
         imshow("SEGMENTACION",segmentedImg);
+        classification();
         // draw phis
         phisPlot();
         // take decision
@@ -1411,9 +1427,8 @@ int main(int argc,char* argv[])
             case 'b': 
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
-        
-                //momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
+                classification();
                 decision();
             break;
 
