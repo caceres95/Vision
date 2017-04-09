@@ -952,6 +952,7 @@ double phi1I=0.4447836087, phi2I=0.1189788907, phi1DevI=0.0933866007, phi2DevI=0
 double phi1O=0.3228794214, phi2O=0.0094902365, phi1DevO=0.0459546901, phi2DevO=0.0090612347;
 double phi1L=0.5555926979, phi2L=0.1814852988, phi1DevL=0.0224679117, phi2DevL=0.0193219872;
 double phi1R=0.2489313303, phi2R=0.0023523036, phi1DevR=0.0242349705, phi2DevR=0.0040109567;
+double phi1Deadmau5=0.1995033381, phi2Deadmau5=0.003130226, phi1DevDeadmau5=0.0025950912, phi2DevDeadmau5=0.0005943853;
 
 bool isX(double phi1, double phi2) {
     return phi1 >= (phi1X-phi1DevX) && phi1 <= (phi1X+phi1DevX) &&
@@ -978,10 +979,23 @@ bool isR(double phi1, double phi2) {
             phi2 >= (phi2R-phi2DevR) && phi2 <= (phi2R+phi2DevR);
 }
 
+bool isDeadmau5(double phi1, double phi2) {
+    return phi1 >= (phi1Deadmau5-phi1DevDeadmau5) && phi1 <= (phi1Deadmau5+phi1DevDeadmau5) &&
+            phi2 >= (phi2Deadmau5-phi2DevDeadmau5) && phi2 <= (phi2Deadmau5+phi2DevDeadmau5);
+}
+
 double getDistance(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
 }
 
+double getMinFromArray(double *array, int size) {
+    int k;
+    double smallest = (double)array[0];
+    for (k=1;k<size;k++) {
+        smallest = min(smallest, (double)array[k]);
+    }
+    return smallest;
+}
 string rounded(double value, int precision) {
     ostringstream os;
     os << setprecision(precision) << fixed;
@@ -1000,31 +1014,45 @@ void decision() {
         double dI=getDistance(phi1, phi2, phi1I, phi2I);
         double dL=getDistance(phi1, phi2, phi1L, phi2L);
         double dR=getDistance(phi1, phi2, phi1R, phi2R);
+        double dDeadmau5=getDistance(phi1, phi2, phi1Deadmau5, phi2Deadmau5);
+        int size = 6;
+        double distances[size];
+        distances[0]=dX;
+        distances[1]=dO;
+        distances[2]=dI;
+        distances[3]=dL;
+        distances[4]=dR;
+        distances[5]=dDeadmau5;
 
-        if (isX(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dX) {
+        if (isX(phi1, phi2) && getMinFromArray(distances, size) == dX) {
             // rutina 1
             // cout << "X" << endl;
             rutina="rutina1 para X con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isI(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dI) {
+        else if (isI(phi1, phi2) && getMinFromArray(distances, size) == dI) {
             // cout << "I" << endl;
             rutina="rutina1 para I con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isO(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dO) {
+        else if (isO(phi1, phi2) && getMinFromArray(distances, size) == dO) {
             // cout << "O" << endl;
             rutina="rutina1 para O con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isL(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dL) {
+        else if (isL(phi1, phi2) && getMinFromArray(distances, size) == dL) {
             // cout << "L" << endl;
             rutina="rutina1 para L con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
-        else if (isR(phi1, phi2) && min(min(min(dX, dO), min(dI, dL)), dR) == dR) {
+        else if (isR(phi1, phi2) && getMinFromArray(distances, size) == dR) {
             // cout << "L" << endl;
             rutina="rutina1 para R con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
+            output << rutina << endl;
+        }
+        else if (isDeadmau5(phi1, phi2) && getMinFromArray(distances, size) == dDeadmau5) {
+            // cout << "L" << endl;
+            rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*figuresGlobVar[k].theta*180/PI, 1) + " grados";
             output << rutina << endl;
         }
         else {
