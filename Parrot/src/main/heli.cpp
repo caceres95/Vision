@@ -142,6 +142,7 @@ string canales = "RGB";
 
 map<unsigned int,struct caracterizacion> globalFigures;
 
+
 // Matriz para convertir a YIQ
 double yiqMat[3][3] = {
     {0.114, 0.587, 0.299},
@@ -516,6 +517,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     //Variables usadas en este algoritmo
     int i, j, y, x; //Para los ciclos
     unsigned int id, k, areaTemp; //Para la idenficacion(id) y color(k) de los segmentos
+    struct caracterizacion caracteristicasTemporales;
+
     //Si la imagen de destino esta vacia, se inicializa
     Vec3b white(255, 255, 255);
     Vec3b black(0, 0, 0);
@@ -550,7 +553,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     unsigned int m11;
     unsigned int m12;
     unsigned int m21;
-    LUT
+    myLUT
 
     ID  K(Color)    Area
     1   1           A=A1+A2
@@ -558,12 +561,12 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     .   .           .
     */
 
-    map<unsigned int,struct region> LUT;
-    map<unsigned int,struct region> FinalLUT;
+    // map<unsigned int,struct region> myLUT;
+    map<unsigned int,struct region> FinalmyLUT;
 
     struct region regionTemp;
     unsigned int idImage[binarizedImage.rows][binarizedImage.cols];
-    unsigned int LUTSize;
+    unsigned int myLUTSize;
 
     for (i=0; i<binarizedImage.rows-1; i++)
     {
@@ -602,6 +605,9 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
     //Comenzamos nuestro analisis pixel por pixel sobre la imagen
      //Inicializamos la matriz color toda en color negro
+    struct caracterizacion *temp = NULL;
+    struct caracterizacion *tempLeft = NULL;
+    struct caracterizacion *tempTop = NULL;
     for (y=1; y<binarizedImage.rows-1; y++)
     {
         for (x=1; x<binarizedImage.cols-1; x++)
@@ -632,13 +638,15 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                 else if(Ps==white && Pi == white)
                 {
                     //Propagacion indistinta, tenemos que detectar conflicto
-                    if(LUT[idImage[y-1][x]].color != LUT[idImage[y][x-1]].color)
+                    if(myLUT[idImage[y-1][x]].color != myLUT[idImage[y][x-1]].color)
                     {
 
                         
                         //Region color contendra el color del pixel superior
-                        regionColor=LUT[idImage[y-1][x]].color;
+                        regionColor=myLUT[idImage[y-1][x]].color;
 
+                        tempLeft=&myLUT[idImage[y][x-1]].caracteristicas;
+                        tempTop=&myLUT[idImage[y-1][x]].caracteristicas;
                         //Borrar dos lineas en caso de error
                         LUT[idImage[y][x-1]].caracteristicas.area+=LUT[idImage[y-1][x]].caracteristicas.area;
                         LUT[idImage[y][x-1]].caracteristicas.m00+=LUT[idImage[y-1][x]].caracteristicas.m00;
@@ -662,14 +670,16 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                         LUT[idImage[y-1][x]].caracteristicas.m11=0;
                         LUT[idImage[y-1][x]].caracteristicas.m12=0;
                         LUT[idImage[y-1][x]].caracteristicas.m21=0;
+
                         //Guardamos su tamaño
-                        LUTSize=(unsigned int) LUT.size();
+                        myLUTSize=(unsigned int) myLUT.size();
 
 
                         //Iteramos sobre la LTU
-                        for (k=1; k<=LUTSize; k++)
+                        for (k=1; k<=myLUTSize; k++)
                         {
                             //Quien tenga el color del pixel superior sera cambiado por el color del pixel lateral
+
                             if(LUT[k].color==regionColor)
                             {   
                                 regionTemp.color=LUT[idImage[y][x-1]].color;
@@ -697,7 +707,6 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                                 regionTemp.caracteristicas.m21=0;
                                 LUT.erase(k);
                                 LUT.insert(make_pair(k, regionTemp));
-
                             }
                         }
                     }
@@ -714,6 +723,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     regionColor.val[1]=(unsigned char) randomNumber(0,255);
                     regionColor.val[2]=(unsigned char) randomNumber(0,255);
 
+                    temp=&regionTemp.caracteristicas;
+
                     //Inicializamos una nueva region
                     regionTemp.color=regionColor;
                     regionTemp.caracteristicas.area=0;
@@ -727,9 +738,10 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     regionTemp.caracteristicas.m11=0;
                     regionTemp.caracteristicas.m12=0;
                     regionTemp.caracteristicas.m21=0;
+
                     idImage[y][x]=id;
 
-                    LUT.insert(make_pair(id, regionTemp));
+                    myLUT.insert(make_pair(id, regionTemp));
 
                     id=id+1;
 
@@ -754,12 +766,13 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     }   
 
 
-    // //Coloreamos la imagen en base a los valores de la LUT
+
+    //Coloreamos la imagen en base a los valores de la myLUT
     for (i=1; i<binarizedImage.rows-1; i++)
     {
         for (j=1; j<binarizedImage.cols-1; j++)
         {
-            segmentedImage.at<Vec3b>(i, j)=LUT[idImage[i][j]].color;
+            segmentedImage.at<Vec3b>(i, j)=myLUT[idImage[i][j]].color;
 
         }
     }
@@ -772,6 +785,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     vector<unsigned int> indexes;
     unsigned int colorIndex;
     for( k=1; k<=LUTSize; k++)
+
     {
         colorIndex=(unsigned int)((LUT[k].color[0]+LUT[k].color[1]+LUT[k].color[2])/3*100);
         if (colorIndex) {
@@ -831,15 +845,15 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
 unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion> figures)
 {
-    unsigned int LUTSize, k;
-    LUTSize=(unsigned int) figures.size();
+    unsigned int myLUTSize, k;
+    myLUTSize=(unsigned int) figures.size();
 
-    if(LUTSize==0)
+    if(myLUTSize==0)
     {
         return 0;
     }
    
-    for (k=0; k<=LUTSize; k++)
+    for (k=0; k<=myLUTSize; k++)
     {
         if(figures[k].color==color)
         {
@@ -857,6 +871,7 @@ void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
     unsigned long long i, j,x,y;
+
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
@@ -865,6 +880,7 @@ void momentos(Mat &segmentedImage)
 
 
         //Coloreamos la imagen en base a los valores de la LUT
+
     // for (x=0; x<segmentedImage.cols; x++)
     // {
     //     for (y=0; y<segmentedImage.rows; y++)
@@ -893,6 +909,7 @@ void momentos(Mat &segmentedImage)
     //             }
 
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
+
                 /*
                 AGREGAR SUMATORIAS EN ESTE CAMPO
                 Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
@@ -909,6 +926,7 @@ void momentos(Mat &segmentedImage)
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
+
 
     //         }
 
@@ -1033,6 +1051,7 @@ void momentos(Mat &segmentedImage)
         // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5+10), 
         //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
 
+
         /*
             //MOMENTOS NORMALIZADOS
     double n02;
@@ -1104,6 +1123,7 @@ double getMinFromArray(double *array, int size) {
     }
     return smallest;
 }
+
 
 string rounded(double value, int precision) {
     ostringstream os;
