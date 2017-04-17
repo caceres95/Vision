@@ -31,6 +31,8 @@ using namespace cv;
 
 #define PI 3.14159265
 
+
+
 //Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
 struct region {
   Vec3b color;
@@ -121,7 +123,7 @@ bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
 
 int Px;
 int Py;
-int vC1=83, vC2=115, vC3=118;
+int vC1=91, vC2=116, vC3=127;
 int thresh1=20, thresh2=12, thresh3=26;
 
 Mat imagenClick;
@@ -134,7 +136,8 @@ Mat frozenImageHSV;
 Mat binarizedImage;
 Mat segmentedImg;
 
-
+vector<struct caracterizacion> figuresGlobVar;
+string rutina = "";
 
 Mat selectedImage;
 int selected = 2;
@@ -146,6 +149,9 @@ double yiqMat[3][3] = {
     {-0.332, -0.274, 0.596},
     {0.312, -0.523, 0.211}
 };
+
+//ofstream outputPhi1("Phi1.txt");
+//ofstream outputPhi2("Phi2.txt");
 
 // segmentation code
 #define PI 3.14159265
@@ -473,10 +479,10 @@ int randomNumber(int min, int max) //range : [min, max)
 }
 
 /*
-	SEGMENTACION
-	Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
-	la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
-	con los identificadores de cada segmento
+    SEGMENTACION
+    Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
+    la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
+    con los identificadores de cada segmento
 
 
 */
@@ -740,6 +746,50 @@ unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion
     return 0;
 }
 
+void giraIzq() {
+cout<<"Gira Izquierda"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void giraDer() {
+cout<<"Gira Derecha"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void avanza() {
+cout<<"Avanza"<<endl;
+heli->setAngles(-10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void retrocede() {
+cout<<"Retrocede"<<endl;
+heli->setAngles(10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void sube() {
+cout<<"Sube"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, 10000, 0.0);
+usleep(500000);
+}
+
+void baja() {
+cout<<"Baja"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, -10000, 0.0);
+usleep(500000);
+}
+
 
 //Obtencion de momentos estadisticos
 void momentos(Mat &segmentedImage)
@@ -751,6 +801,11 @@ void momentos(Mat &segmentedImage)
     id=0;
     struct caracterizacion caracteristicas;
     ofstream outputFile("figures.txt");
+    ofstream phi1;
+    phi1.open("Phi1.txt", std::ios_base::app);
+    ofstream phi2;
+    phi2.open("Phi2.txt", std::ios_base::app);
+    //outputPhi2.open("Phi2.txt");
 
         //Coloreamos la imagen en base a los valores de la LUT
     for (x=0; x<segmentedImage.cols; x++)
@@ -805,6 +860,7 @@ void momentos(Mat &segmentedImage)
 
     //OBTENEMOS MOMENTOS CENTRALIZADOS (Para estos ya no necesitamos iterar la figura)
     
+    figuresGlobVar.clear();
     figuresSize=figures.size();
     for( k=0; k<figuresSize; k++)
     {
@@ -847,6 +903,8 @@ void momentos(Mat &segmentedImage)
 
         figures[k].theta=0.5*atan2(2.0*figures[k].u11,figures[k].u20-figures[k].u02);
 
+        figuresGlobVar.push_back(figures[k]);
+
     }
 
     int length = 50;
@@ -866,6 +924,9 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta);
         outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265);
         outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
+
+        phi1<<"\n" << DoubleToString(figures[k].phi1);
+        phi2<<"\n" << DoubleToString(figures[k].phi2);
 
         circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
         line (
@@ -915,6 +976,135 @@ void momentos(Mat &segmentedImage)
 }
 
 
+double phis[4][4];
+double phi1X=0.270186 , phi2X=0.0166184, phi1DevX=0.1005963845, phi2DevX=0.0470641965;
+double phi1I=0.2998182083, phi2I=0.03909725, phi1DevI=0.0442218748, phi2DevI=0.0207706412;
+double phi1O=0.2693587826, phi2O=0.0132831148, phi1DevO=0.0865172952, phi2DevO=0.0144480507;
+double phi1L=0.398585 , phi2L=0.0963117, phi1DevL=0.090161743, phi2DevL=0.1081982145;
+
+void initPhis() {
+    phis[0][0]=phi1X;
+    phis[0][1]=phi2X;
+    phis[0][2]=phi1DevX;
+    phis[0][3]=phi2DevX;
+    phis[0][0]=phi1I;
+    phis[0][1]=phi2I;
+    phis[0][2]=phi1DevI;
+    phis[0][3]=phi2DevI;
+    phis[0][0]=phi1O;
+    phis[0][1]=phi2O;
+    phis[0][2]=phi1DevO;
+    phis[0][3]=phi2DevO;
+    phis[0][0]=phi1L;
+    phis[0][1]=phi2L;
+    phis[0][2]=phi1DevL;
+    phis[0][3]=phi2DevL;
+}
+
+bool isX(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1X-phi1DevX) && figure->phi1 <= (phi1X+phi1DevX) &&
+            figure->phi2 >= (phi2X-phi2DevX) && figure->phi2 <= (phi2X+phi2DevX);
+}
+
+bool isI(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1I-phi1DevI) && figure->phi1 <= (phi1I+phi1DevI) &&
+            figure->phi2 >= (phi2I-phi2DevI) && figure->phi2 <= (phi2I+phi2DevI);
+}
+
+bool isO(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1O-phi1DevO) && figure->phi1 <= (phi1O+phi1DevO) &&
+            figure->phi2 >= (phi2O-phi2DevO) && figure->phi2 <= (phi2O+phi2DevO);
+}
+
+bool isL(struct caracterizacion *figure) {
+    return figure->phi1 >= (phi1L-phi1DevL) && figure->phi1 <= (phi1L+phi1DevL) &&
+            figure->phi2 >= (phi2L-phi2DevL) && figure->phi2 <= (phi2L+phi2DevL);
+}
+
+double getDistance(double x1, double y1, double x2, double y2) {
+    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+}
+
+void decision() {
+    int k, i;
+    double smallestDistance=1000000;
+    int id=0;
+    ofstream outMomentos("momentos.txt");
+    double distancia=100000000000;
+    for(k=0;k<figuresGlobVar.size();k++) {
+        double x=figuresGlobVar[k].phi1;
+        double y=figuresGlobVar[k].phi2;
+        double dX=getDistance(x, y, phi1X, phi2X);
+        double dO=getDistance(x, y, phi1O, phi2O);
+        double dI=getDistance(x, y, phi1I, phi2I);
+        double dL=getDistance(x, y, phi1L, phi2L);
+
+        if (isX(&figuresGlobVar[k])) {
+            // rutina 1
+            rutina="rutina1 para X con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+            outMomentos << rutina << "\n";
+            giraDer();
+
+
+        }
+        if (isI(&figuresGlobVar[k])) {
+            rutina="rutina1 para I con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+            outMomentos << rutina << "\n";
+            sube();
+        }
+         if (isO(&figuresGlobVar[k])) {
+            rutina="rutina1 para O con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+            outMomentos << rutina << "\n";
+            giraIzq();
+
+        }
+         if (isL(&figuresGlobVar[k])) {
+            rutina="rutina1 para L con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+            outMomentos << rutina << "\n";
+            baja();
+
+        }
+    }
+/*
+        for(i=0;i<4;i++) {
+            if (getDistance(x, y, phis[i][0], phis[i][1]) < smallestDistance) {
+                smallestDistance=getDistance(x, y, phi1X, phi2X);
+                id=i;
+            }
+        }
+        switch(id) {
+            case 0:
+                if (isX(&figuresGlobVar[k])) {
+                    // rutina 1
+                    rutina="rutina1 para X con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                    outMomentos << rutina;
+
+                }
+                break;
+            case 1:
+                if (isI(&figuresGlobVar[k])) {
+                    rutina="rutina1 para I con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                    outMomentos << rutina;
+                }
+                break;
+            case 2:
+                if (isO(&figuresGlobVar[k])) {
+                    rutina="rutina1 para O con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                    outMomentos << rutina;
+                }
+                break;
+            case 3:
+                if (isL(&figuresGlobVar[k])) {
+                    rutina="rutina1 para L con angulo de " + DoubleToString(figuresGlobVar[k].theta*180/PI) + " grados";
+                    outMomentos << rutina;
+                }
+                break;
+        }
+    }*/
+}
+
+
+
 int main(int argc,char* argv[])
 {
 
@@ -941,42 +1131,43 @@ int main(int argc,char* argv[])
     */
 
 
+    initPhis();
+    ofstream outputPhi1("Phi1.txt");
+    ofstream outputPhi2("Phi2.txt");
+
+    Vec3b aux(111,222,255);
+    map<unsigned int,Vec3b> idTable;
+    
+    idTable.insert(make_pair(0, aux));
+    aux.val[0]=11;
+    aux.val[1]=22;
+    aux.val[2]=33;
+
+    idTable.insert(make_pair(1, aux));
+
+        aux.val[0]=44;
+    aux.val[1]=55;
+    aux.val[2]=66;
 
 
+    idTable.insert(make_pair(2, aux));
 
-	Vec3b aux(111,222,255);
-	map<unsigned int,Vec3b> idTable;
-	
-	idTable.insert(make_pair(0, aux));
-	aux.val[0]=11;
-	aux.val[1]=22;
-	aux.val[2]=33;
+        aux.val[0]=77;
+    aux.val[1]=88;
+    aux.val[2]=99;
 
-	idTable.insert(make_pair(1, aux));
-
-		aux.val[0]=44;
-	aux.val[1]=55;
-	aux.val[2]=66;
+    idTable.insert(make_pair(3, aux));
 
 
-	idTable.insert(make_pair(2, aux));
+    //Experimento
+    //Declaramos matriz 3 x 3
+    unsigned int matriz[2][2];
+    matriz[0][0]=2;
+    matriz[0][1]=3;
+    matriz[1][0]=4;
+    matriz[1][1]=0;
 
-		aux.val[0]=77;
-	aux.val[1]=88;
-	aux.val[2]=99;
-
-	idTable.insert(make_pair(3, aux));
-
-
-	//Experimento
-	//Declaramos matriz 3 x 3
-	unsigned int matriz[2][2];
-	matriz[0][0]=2;
-	matriz[0][1]=3;
-	matriz[1][0]=4;
-	matriz[1][1]=0;
-
-	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
+    idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
 
     //VideoCapture cap(0); // open the default camera
@@ -1034,13 +1225,14 @@ int main(int argc,char* argv[])
             SDL_PollEvent(&event);
 
             joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 3);
+            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5);
             joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
             joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
             joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
             joypadLand = SDL_JoystickGetButton(m_joystick, 2);
-            joypadScan = SDL_JoystickGetButton(m_joystick, 3);
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
+            joypadScan = SDL_JoystickGetButton(m_joystick, 3);
+            
         }
 
         //Vec3b aux;
@@ -1201,22 +1393,21 @@ int main(int argc,char* argv[])
             case 'd': yaw = 20000.0; break;
             case 'w': height = -20000.0; break;
             case 's': height = 20000.0; break;
-            // case 'q': heli->takeoff(); break;
-            // case 'e': heli->land(); break;
-            // case 'z': heli->switchCamera(0); break;
-            // case 'x': heli->switchCamera(1); break;
-            // case 'c': heli->switchCamera(2); break;
-            // case 'v': heli->switchCamera(3); break;
+            case 'q': heli->takeoff(); break;
+            case 'e': heli->land(); break;
+            case 'z': giraIzq(); break;
+            case 'x': giraDer(); break;
+            case 'c': avanza(); break;
+            case 'v': retrocede(); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
-            case 'i': pitch = -20000.0; break;
-            case 'k': pitch = 20000.0; break;
+            case 'i': sube(); break;
+            case 'k': baja(); break;
             case 'h': hover = (hover + 1) % 2; break;
             case 'b': 
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
-        
-                //momentos(segmentedImg);
+
                 imshow("SEGMENTACION",segmentedImg);
             break;
 
@@ -1237,21 +1428,20 @@ int main(int argc,char* argv[])
         if (joypadScan){
             segment(filteredImage,segmentedImg);
             momentos(segmentedImg);
-            
-            //momentos(segmentedImg);
             imshow("SEGMENTACION",segmentedImg);
+            decision();
         }
         hover = joypadHover ? 1 : 0;
 
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            // heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
+            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
         else
         {
-            // heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(pitch, roll, yaw, height, hover);
             navigatedWithJoystick = false;
         }
     
