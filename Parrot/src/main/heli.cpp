@@ -32,16 +32,6 @@ using namespace cv;
 
 #define PI 3.14159265
 
-
-
-//Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
-struct region {
-  Vec3b color;
-  unsigned int area;
-
-
-} ;
-
 struct caracterizacion{
     //Estructura con todas los momentos estadisticos que puede tener una figura
     Vec3b color;
@@ -94,6 +84,12 @@ struct caracterizacion{
 
 };
 
+//Esta estructra servira para almacenar el color de una region y sus momentos caracteristicos
+struct region {
+  Vec3b color;
+  struct caracterizacion caracteristicas;
+} ;
+
 string IntToString (unsigned int a)
 {
     ostringstream temp;
@@ -125,10 +121,8 @@ bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
 
 int Px;
 int Py;
-
 int vC1=85, vC2=115, vC3=152;
 int thresh1=22, thresh2=20, thresh3=36;
-
 
 Mat imagenClick;
 
@@ -140,12 +134,11 @@ Mat frozenImageHSV;
 Mat binarizedImage;
 Mat segmentedImg;
 
-vector<struct caracterizacion> figuresGlobVar;
-string rutina = "";
+
 
 Mat selectedImage;
 int selected = 2;
-string canales = "RGB";
+string canales = "YIQ";
 
 map<unsigned int,struct caracterizacion> globalFigures;
 
@@ -155,9 +148,6 @@ double yiqMat[3][3] = {
     {-0.332, -0.274, 0.596},
     {0.312, -0.523, 0.211}
 };
-
-//ofstream outputPhi1("Phi1.txt");
-//ofstream outputPhi2("Phi2.txt");
 
 // segmentation code
 class Pix{
@@ -524,7 +514,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
    
 
     //Variables usadas en este algoritmo
-    int i, j; //Para los ciclos
+    int i, j, y, x; //Para los ciclos
     unsigned int id, k, areaTemp; //Para la idenficacion(id) y color(k) de los segmentos
     //Si la imagen de destino esta vacia, se inicializa
     Vec3b white(255, 255, 255);
@@ -612,42 +602,42 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
 
     //Comenzamos nuestro analisis pixel por pixel sobre la imagen
      //Inicializamos la matriz color toda en color negro
-    for (i=1; i<binarizedImage.rows-1; i++)
+    for (y=1; y<binarizedImage.rows-1; y++)
     {
-        for (j=1; j<binarizedImage.cols-1; j++)
+        for (x=1; x<binarizedImage.cols-1; x++)
         {
-            if(binarizedImage.at<Vec3b>(i,j)==black)
+            if(binarizedImage.at<Vec3b>(y,x)==black)
             {
                 continue;
             }
 
             else //La imagen orginal tiene un 1
             {
-                Pi=binarizedImage.at<Vec3b>(i,j-1);
-                Ps=binarizedImage.at<Vec3b>(i-1,j);
-                Pc=binarizedImage.at<Vec3b>(i,j);
+                Pi=binarizedImage.at<Vec3b>(y,x-1);
+                Ps=binarizedImage.at<Vec3b>(y-1,x);
+                Pc=binarizedImage.at<Vec3b>(y,x);
 
                 if(Ps==white && Pi == black)
                 {
                     //Propagacion descendiente
-                    idImage[i][j]=idImage[i-1][j];
+                    idImage[y][x]=idImage[y-1][x];
 
                 }
                 else if(Ps==black && Pi == white)
                 {
                     //Propagacion lateral
-                    idImage[i][j]=idImage[i][j-1];
+                    idImage[y][x]=idImage[y][x-1];
                 }
 
                 else if(Ps==white && Pi == white)
                 {
                     //Propagacion indistinta, tenemos que detectar conflicto
-                    if(LUT[idImage[i-1][j]].color != LUT[idImage[i][j-1]].color)
+                    if(LUT[idImage[y-1][x]].color != LUT[idImage[y][x-1]].color)
                     {
 
                         
                         //Region color contendra el color del pixel superior
-                        regionColor=LUT[idImage[i-1][j]].color;
+                        regionColor=LUT[idImage[y-1][x]].color;
 
                         //Borrar dos lineas en caso de error
                         LUT[idImage[y][x-1]].caracteristicas.area+=LUT[idImage[y-1][x]].caracteristicas.area;
@@ -672,7 +662,6 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                         LUT[idImage[y-1][x]].caracteristicas.m11=0;
                         LUT[idImage[y-1][x]].caracteristicas.m12=0;
                         LUT[idImage[y-1][x]].caracteristicas.m21=0;
-
                         //Guardamos su tamaño
                         LUTSize=(unsigned int) LUT.size();
 
@@ -714,7 +703,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     }
 
                     //Propagacion lateral
-                    idImage[i][j]=idImage[i][j-1];
+                    idImage[y][x]=idImage[y][x-1];
                 }
 
                 else if(Ps==black && Pi == black)
@@ -738,10 +727,9 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                     regionTemp.caracteristicas.m11=0;
                     regionTemp.caracteristicas.m12=0;
                     regionTemp.caracteristicas.m21=0;
-
                     idImage[y][x]=id;
 
-                    myLUT.insert(make_pair(id, regionTemp));
+                    LUT.insert(make_pair(id, regionTemp));
 
                     id=id+1;
 
@@ -913,8 +901,7 @@ usleep(500000);
 void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
-    unsigned long long i, j,x,y;
-
+    //unsigned long long i, j,x,y;
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
@@ -1040,7 +1027,7 @@ void momentos(Mat &segmentedImage)
         outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
 
         // For training!
-        // cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
+        cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
         //
 
         // Dibujamos sobre "segmentedImage" datos relevantes
@@ -1094,71 +1081,7 @@ void momentos(Mat &segmentedImage)
         // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5+10), 
         //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
 
-        //MOMENTOS de HU
-        figures[k].phi1=figures[k].n20+figures[k].n02;
-        figures[k].phi2=pow(figures[k].n20-figures[k].n02,2)+4*pow(figures[k].n11,2);
-        figures[k].phi3=pow(figures[k].n30-3*figures[k].n12,2)+pow(3*figures[k].n21-figures[k].n03,2);
-        figures[k].phi4=pow(figures[k].n30+figures[k].n12,2)+pow(figures[k].n21+figures[k].n03,2);
 
-        figures[k].theta=0.5*atan2(2.0*figures[k].u11,figures[k].u20-figures[k].u02);
-
-        figuresGlobVar.push_back(figures[k]);
-
-    }
-
-    int length = 50;
-    figuresSize=figures.size();
-    for( k=0; k<figuresSize; k++)
-    {
-        outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(figures[k].color[0])<<" "<<IntToString(figures[k].color[1])<<" "<<IntToString(figures[k].color[2])<<" | Area: "<<IntToString(figures[k].area)<<" ";
-        outputFile<<"| m00: "<<IntToString(figures[k].m00)<<" | m10: "<<IntToString(figures[k].m10)<<" | m20: "<<IntToString(figures[k].m20)<<" | m30: "<<IntToString(figures[k].m30);
-        outputFile<<" | m01: "<<IntToString(figures[k].m01)<<" | m02: "<<IntToString(figures[k].m02)<<" | m03: "<<IntToString(figures[k].m03);
-        outputFile<<" | m11: "<<IntToString(figures[k].m11)<<" | m12: "<<IntToString(figures[k].m12)<<" | m21: "<<IntToString(figures[k].m21)<<" | XProm: "<<DoubleToString(figures[k].xPromedio)<<" | YProm: "<<DoubleToString(figures[k].yPromedio)<<" ";
-        outputFile<<" | u10: "<<IntToString(figures[k].u10)<<" | u01: "<<IntToString(figures[k].u01)<<" | u20: "<<DoubleToString(figures[k].u20);
-        outputFile<<" | u02: "<<DoubleToString(figures[k].u02)<<" | u11: "<<DoubleToString(figures[k].u11)<<" | u30: "<<DoubleToString(figures[k].u30);
-        outputFile<<" | u03: "<<DoubleToString(figures[k].u03)<<" | u12: "<<DoubleToString(figures[k].u12)<<" | u21: "<<DoubleToString(figures[k].u21);
-        outputFile<<" | n02: "<<DoubleToString(figures[k].n02)<<" | n03: "<<DoubleToString(figures[k].n03)<<" | n11: "<<DoubleToString(figures[k].n11);
-        outputFile<<" | n12: "<<DoubleToString(figures[k].n12)<<" | n20: "<<DoubleToString(figures[k].n20)<<" | n21: "<<DoubleToString(figures[k].n21);
-        outputFile<<" | n30: "<<DoubleToString(figures[k].n30)<<" | phi1: "<<DoubleToString(figures[k].phi1)<<" | phi2: "<<DoubleToString(figures[k].phi2);
-        outputFile<<" | phi3: "<<DoubleToString(figures[k].phi3)<<" | phi4: "<<DoubleToString(figures[k].phi4)<<" | theta: "<<DoubleToString(figures[k].theta);
-        outputFile<<" | Degrees: "<<DoubleToString(figures[k].theta*180 / 3.14159265);
-        outputFile<<" | XP: "<<IntToString(figures[k].xPromedio+.5)<<" | YP: "<<IntToString(figures[k].yPromedio+.5)<<endl<<endl;
-
-        phi1<<"\n" << DoubleToString(figures[k].phi1);
-        phi2<<"\n" << DoubleToString(figures[k].phi2);
-
-        circle (segmentedImage, Point(figures[k].xPromedio+.5,figures[k].yPromedio+.5),4,Scalar(255,0,0),CV_FILLED);
-        line (
-            segmentedImage, 
-            Point(
-                figures[k].xPromedio+.5, 
-                figures[k].yPromedio+.5
-                ), // Centroide
-            Point(
-                figures[k].xPromedio+.5 + length*cos(figures[k].theta), 
-                figures[k].yPromedio+.5
-                ), // Centroide + distancia a la derecha en X
-            Scalar( 255, 0, 0), 2, 8, 0  
-            );
-        line (
-            segmentedImage,
-            Point(
-                figures[k].xPromedio+.5,
-                figures[k].yPromedio+.5
-                ), // Centroide
-            Point(
-                figures[k].xPromedio+.5 + length*cos(figures[k].theta), // x 
-                figures[k].yPromedio+.5 + length*sin(figures[k].theta) // y
-                ),
-                Scalar( 255, 0, 0), 2, 8, 0  
-            );
-        ellipse( segmentedImage, 
-            Point(
-                figures[k].xPromedio+.5,
-                figures[k].yPromedio+.5 
-                ),
-            Size( length/2, length/2 ), 0, 0, figures[k].theta*180 / PI,
-            Scalar( 0, 255, 0 ), 1, 8 );
         /*
             //MOMENTOS NORMALIZADOS
     double n02;
@@ -1245,7 +1168,7 @@ void decision() {
 
 void classification() {
     string rutina="";
-    // ofstream output("reconocimiento.txt");
+    ofstream output("reconocimiento.txt");
     int k;
     for(k=0;k<globalFigures.size();k++) {
         double phi1=globalFigures[k].phi1;
@@ -1465,11 +1388,6 @@ int main(int argc,char* argv[])
 
     */
 
-
-    initPhis();
-    ofstream outputPhi1("Phi1.txt");
-    ofstream outputPhi2("Phi2.txt");
-
     Vec3b aux(111,222,255);
     map<unsigned int,Vec3b> idTable;
     
@@ -1480,7 +1398,7 @@ int main(int argc,char* argv[])
 
     idTable.insert(make_pair(1, aux));
 
-        aux.val[0]=44;
+    aux.val[0]=44;
     aux.val[1]=55;
     aux.val[2]=66;
 
@@ -1567,7 +1485,7 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-        printf("\033[2J\033[1;1H");
+       // printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -1588,22 +1506,22 @@ int main(int argc,char* argv[])
         Vec3b aux;
 
         // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        printf("===================== Parrot Basic Example =====================\n\n");
-        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        fprintf(stdout, "Hover   : %d \n", hover);
-        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        fprintf(stdout, "  Land    : %d \n", joypadLand);
-        fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
+        // printf("===================== Parrot Basic Example =====================\n\n");
+        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
+        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        // fprintf(stdout, "Hover   : %d \n", hover);
+        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+        // fprintf(stdout, "  Land    : %d \n", joypadLand);
+        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
+        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         //cap >> currentImage;
 
@@ -1645,14 +1563,14 @@ int main(int argc,char* argv[])
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
         imshow("Filtered Image", filteredImage);
-        segment(filteredImage,segmentedImg);
-        momentos(segmentedImg);
-        imshow("SEGMENTACION",segmentedImg);
-        classification();
-        // draw phis
-        phisPlot();
-        // take decision
-        decision();
+        // segment(filteredImage,segmentedImg);
+        // momentos(segmentedImg);
+        // imshow("SEGMENTACION",segmentedImg);
+        // classification();
+        // // draw phis
+        // phisPlot();
+        // // take decision
+        //decision();
 
         char key = waitKey(5);
         switch (key) {
@@ -1676,7 +1594,8 @@ int main(int argc,char* argv[])
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
-                decision();
+                phisPlot();
+                //decision();
             break;
 
             case '1': selected=1; break;
@@ -1698,7 +1617,8 @@ int main(int argc,char* argv[])
             segment(filteredImage,segmentedImg);
             momentos(segmentedImg);
             imshow("SEGMENTACION",segmentedImg);
-            decision();
+            classification();
+            phisPlot();
         }
 
         hover = joypadHover ? 1 : 0;
