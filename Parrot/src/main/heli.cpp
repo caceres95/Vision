@@ -1563,13 +1563,13 @@ int main(int argc,char* argv[])
         // Filter image
         Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
         imshow("Filtered Image", filteredImage);
-        // segment(filteredImage,segmentedImg);
-        // momentos(segmentedImg);
-        // imshow("SEGMENTACION",segmentedImg);
-        // classification();
-        // // draw phis
-        // phisPlot();
-        // // take decision
+        segment(filteredImage,segmentedImg);
+        momentos(segmentedImg);
+        imshow("SEGMENTACION",segmentedImg);
+        classification();
+        // draw phis
+        phisPlot();
+        // take decision
         //decision();
 
         char key = waitKey(5);
