@@ -1292,10 +1292,12 @@ void phisPlot(double multiplier, double pointSize) {
         }
     }
     /*
-    code for showing circles
+    code for showing phis areas
     */
     int index;
     for(index=0;index<trainedPhisSize;index++) {
+
+        // show area by using ellipse
         ellipse(
             phis, 
             Point(
@@ -1306,6 +1308,8 @@ void phisPlot(double multiplier, double pointSize) {
             0, 0, 360,
             Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]), 
             1, 8 );
+
+        // show center by using cross marker made of 4 lines
         line(phis, 
             Point(
                 trainedPhis[index][0] * phis.cols,
@@ -1350,6 +1354,15 @@ void phisPlot(double multiplier, double pointSize) {
                 ),
             Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
             2, 8, 0  );
+
+        // put text to indicate what each area represent
+         putText(phis, trainedObjects[index], 
+            Point(
+                (trainedPhis[index][0]+trainedPhis[index][1]) * phis.cols+offset,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ), 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
+
     }
     imshow("Phis (phi1, phi2)", phis);
 }
