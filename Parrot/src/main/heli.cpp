@@ -522,7 +522,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     Vec3b regionColor;
     Vec3b Pi,Ps, Pc; //Para identificar los tres pixeles analizadores
     ofstream outputFile;
-    outputFile.open("LUT.txt", std::ios_base::app);
+    // outputFile.open("LUT.txt", std::ios_base::app);
 
     if (segmentedImage.empty())
     segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
@@ -825,9 +825,9 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
         caracteristicas.m12=tempPatch[indexes[k]].m12;
         caracteristicas.m21=tempPatch[indexes[k]].m21;
         globalFigures.insert(make_pair(k, caracteristicas));
-        outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(tempPatch[indexes[k]].color[0])<<" "<<IntToString(tempPatch[indexes[k]].color[1])<<" "<<IntToString(tempPatch[indexes[k]].color[2])<<" Area: "<<IntToString(tempPatch[indexes[k]].area)<<"\n";
+        // outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(tempPatch[indexes[k]].color[0])<<" "<<IntToString(tempPatch[indexes[k]].color[1])<<" "<<IntToString(tempPatch[indexes[k]].color[2])<<" Area: "<<IntToString(tempPatch[indexes[k]].area)<<"\n";
     }
-    outputFile.close();
+    // outputFile.close();
 }
 
 unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion> figures)
@@ -906,7 +906,7 @@ void momentos(Mat &segmentedImage)
     id=0;
     struct caracterizacion caracteristicas;
     ofstream outputFile;
-    outputFile.open("figures.txt", std::ios_base::app);
+    // outputFile.open("figures.txt", std::ios_base::app);
 
 
         //Coloreamos la imagen en base a los valores de la LUT
@@ -1012,19 +1012,19 @@ void momentos(Mat &segmentedImage)
     figuresSize=globalFigures.size();
     for( k=0; k<figuresSize; k++)
     {
-        outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(globalFigures[k].color[0])<<" "<<IntToString(globalFigures[k].color[1])<<" "<<IntToString(globalFigures[k].color[2])<<" | Area: "<<IntToString(globalFigures[k].area)<<" ";
-        outputFile<<"| m00: "<<IntToString(globalFigures[k].m00)<<" | m10: "<<IntToString(globalFigures[k].m10)<<" | m20: "<<IntToString(globalFigures[k].m20)<<" | m30: "<<IntToString(globalFigures[k].m30);
-        outputFile<<" | m01: "<<IntToString(globalFigures[k].m01)<<" | m02: "<<IntToString(globalFigures[k].m02)<<" | m03: "<<IntToString(globalFigures[k].m03);
-        outputFile<<" | m11: "<<IntToString(globalFigures[k].m11)<<" | m12: "<<IntToString(globalFigures[k].m12)<<" | m21: "<<IntToString(globalFigures[k].m21)<<" | XProm: "<<DoubleToString(globalFigures[k].xPromedio)<<" | YProm: "<<DoubleToString(globalFigures[k].yPromedio)<<" ";
-        outputFile<<" | u10: "<<IntToString(globalFigures[k].u10)<<" | u01: "<<IntToString(globalFigures[k].u01)<<" | u20: "<<DoubleToString(globalFigures[k].u20);
-        outputFile<<" | u02: "<<DoubleToString(globalFigures[k].u02)<<" | u11: "<<DoubleToString(globalFigures[k].u11)<<" | u30: "<<DoubleToString(globalFigures[k].u30);
-        outputFile<<" | u03: "<<DoubleToString(globalFigures[k].u03)<<" | u12: "<<DoubleToString(globalFigures[k].u12)<<" | u21: "<<DoubleToString(globalFigures[k].u21);
-        outputFile<<" | n02: "<<DoubleToString(globalFigures[k].n02)<<" | n03: "<<DoubleToString(globalFigures[k].n03)<<" | n11: "<<DoubleToString(globalFigures[k].n11);
-        outputFile<<" | n12: "<<DoubleToString(globalFigures[k].n12)<<" | n20: "<<DoubleToString(globalFigures[k].n20)<<" | n21: "<<DoubleToString(globalFigures[k].n21);
-        outputFile<<" | n30: "<<DoubleToString(globalFigures[k].n30)<<" | phi1: "<<DoubleToString(globalFigures[k].phi1)<<" | phi2: "<<DoubleToString(globalFigures[k].phi2);
-        outputFile<<" | phi3: "<<DoubleToString(globalFigures[k].phi3)<<" | phi4: "<<DoubleToString(globalFigures[k].phi4)<<" | theta: "<<DoubleToString(globalFigures[k].theta);
-        outputFile<<" | Degrees: "<<DoubleToString(globalFigures[k].theta*180 / 3.14159265);
-        outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
+        // outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(globalFigures[k].color[0])<<" "<<IntToString(globalFigures[k].color[1])<<" "<<IntToString(globalFigures[k].color[2])<<" | Area: "<<IntToString(globalFigures[k].area)<<" ";
+        // outputFile<<"| m00: "<<IntToString(globalFigures[k].m00)<<" | m10: "<<IntToString(globalFigures[k].m10)<<" | m20: "<<IntToString(globalFigures[k].m20)<<" | m30: "<<IntToString(globalFigures[k].m30);
+        // outputFile<<" | m01: "<<IntToString(globalFigures[k].m01)<<" | m02: "<<IntToString(globalFigures[k].m02)<<" | m03: "<<IntToString(globalFigures[k].m03);
+        // outputFile<<" | m11: "<<IntToString(globalFigures[k].m11)<<" | m12: "<<IntToString(globalFigures[k].m12)<<" | m21: "<<IntToString(globalFigures[k].m21)<<" | XProm: "<<DoubleToString(globalFigures[k].xPromedio)<<" | YProm: "<<DoubleToString(globalFigures[k].yPromedio)<<" ";
+        // outputFile<<" | u10: "<<IntToString(globalFigures[k].u10)<<" | u01: "<<IntToString(globalFigures[k].u01)<<" | u20: "<<DoubleToString(globalFigures[k].u20);
+        // outputFile<<" | u02: "<<DoubleToString(globalFigures[k].u02)<<" | u11: "<<DoubleToString(globalFigures[k].u11)<<" | u30: "<<DoubleToString(globalFigures[k].u30);
+        // outputFile<<" | u03: "<<DoubleToString(globalFigures[k].u03)<<" | u12: "<<DoubleToString(globalFigures[k].u12)<<" | u21: "<<DoubleToString(globalFigures[k].u21);
+        // outputFile<<" | n02: "<<DoubleToString(globalFigures[k].n02)<<" | n03: "<<DoubleToString(globalFigures[k].n03)<<" | n11: "<<DoubleToString(globalFigures[k].n11);
+        // outputFile<<" | n12: "<<DoubleToString(globalFigures[k].n12)<<" | n20: "<<DoubleToString(globalFigures[k].n20)<<" | n21: "<<DoubleToString(globalFigures[k].n21);
+        // outputFile<<" | n30: "<<DoubleToString(globalFigures[k].n30)<<" | phi1: "<<DoubleToString(globalFigures[k].phi1)<<" | phi2: "<<DoubleToString(globalFigures[k].phi2);
+        // outputFile<<" | phi3: "<<DoubleToString(globalFigures[k].phi3)<<" | phi4: "<<DoubleToString(globalFigures[k].phi4)<<" | theta: "<<DoubleToString(globalFigures[k].theta);
+        // outputFile<<" | Degrees: "<<DoubleToString(globalFigures[k].theta*180 / 3.14159265);
+        // outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
 
         // For training!
         //cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
@@ -1104,52 +1104,41 @@ void momentos(Mat &segmentedImage)
 // double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 // homeros training
-double phi1X=0.3291002434, phi2X=0.0253875885, phi1DevX=0.0288278764, phi2DevX=0.0039292151;
-double phi1I=0.4447836087, phi2I=0.1189788907, phi1DevI=0.0933866007, phi2DevI=0.0359672862;
-double phi1O=0.3648078675, phi2O=0.0098792798, phi1DevO=0.0100242852, phi2DevO=0.0010190414;
-double phi1L=0.5555926979, phi2L=0.1814852988, phi1DevL=0.0224679117, phi2DevL=0.0193219872;
-double phi1R=0.2489313303, phi2R=0.0023523036, phi1DevR=0.0242349705, phi2DevR=0.0040109567;
-double phi1Deadmau5=0.1995033381, phi2Deadmau5=0.003130226, phi1DevDeadmau5=0.0025950912, phi2DevDeadmau5=0.0005943853;
+#define trainedPhisSize 4
+string trainedObjects[trainedPhisSize] = {"X", "I", "L", "R"};
+// ORDER -->  {PHI1_AVERAGE, PHI1_STANDARD_DEVIATION, PHI2_AVERAGE, PHI2_STANDARD_DEVIATION}
+double trainedPhis[trainedPhisSize][4] = {
+    {0.3661988504, 0.0414660219, 0.0323226694, 0.0070028227}, // X
+    {0.440089257, 0.0295243932, 0.0877471495, 0.0277660379}, // I
+    //{0.3648078675, 0.0100242852, 0.0098792798, 0.0010190414}, // O
+    {0.5599775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
+    {0.2763952578, 0.0093850278, 0.0016686626, 0.0003864559}, // R
+    //{0.1995033381, 0.0025950912, 0.003130226, 0.0005943853}, // Deadmau5
+};
+int trainedPhisColors[trainedPhisSize][3] = {
+    {0, 245, 0}, // X
+    {34, 21, 132}, // I
+    //{132, 140, 77}, // O
+    {191, 113, 24}, // L
+    {0, 245, 245}, // R
+    //{173, 46, 143}, // Deadmau5
+};
 
-bool isX(double phi1, double phi2) {
-    return phi1 >= (phi1X-phi1DevX) && phi1 <= (phi1X+phi1DevX) &&
-            phi2 >= (phi2X-phi2DevX) && phi2 <= (phi2X+phi2DevX);
-}
-
-bool isI(double phi1, double phi2) {
-    return phi1 >= (phi1I-phi1DevI) && phi1 <= (phi1I+phi1DevI) &&
-            phi2 >= (phi2I-phi2DevI) && phi2 <= (phi2I+phi2DevI);
-}
-
-bool isO(double phi1, double phi2) {
-    return phi1 >= (phi1O-phi1DevO) && phi1 <= (phi1O+phi1DevO) &&
-            phi2 >= (phi2O-phi2DevO) && phi2 <= (phi2O+phi2DevO);
-}
-
-bool isL(double phi1, double phi2) {
-    return phi1 >= (phi1L-phi1DevL) && phi1 <= (phi1L+phi1DevL) &&
-            phi2 >= (phi2L-phi2DevL) && phi2 <= (phi2L+phi2DevL);
-}
-
-bool isR(double phi1, double phi2) {
-    return phi1 >= (phi1R-phi1DevR) && phi1 <= (phi1R+phi1DevR) &&
-            phi2 >= (phi2R-phi2DevR) && phi2 <= (phi2R+phi2DevR);
-}
-
-bool isDeadmau5(double phi1, double phi2) {
-    return phi1 >= (phi1Deadmau5-phi1DevDeadmau5) && phi1 <= (phi1Deadmau5+phi1DevDeadmau5) &&
-            phi2 >= (phi2Deadmau5-phi2DevDeadmau5) && phi2 <= (phi2Deadmau5+phi2DevDeadmau5);
+// Checks whether (testPhi1, testPhi2) intersects in [range (phi1Avg+-phi1StdDev) and range (phi2Avg+-phi2StdDev)]
+bool intersects(double testPhi1Avg, double testPhi2Avg, double phi1Avg, double phi2Avg, double phi1StdDev, double phi2StdDev) {
+    return testPhi1Avg >= (phi1Avg-phi1StdDev) && testPhi1Avg <= (phi1Avg+phi1StdDev) &&
+            testPhi2Avg >= (phi2Avg-phi2StdDev) && testPhi2Avg <= (phi2Avg+phi2StdDev);
 }
 
 double getDistance(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
 }
 
-double getMinFromArray(double *array, int size) {
+double getMinFromList(vector<double> list) {
     int k;
-    double smallest = (double)array[0];
-    for (k=1;k<size;k++) {
-        smallest = min(smallest, (double)array[k]);
+    double smallest = (double)list[0];
+    for (k=1;k<list.size();k++) {
+        smallest = min(smallest, (double)list[k]);
     }
     return smallest;
 }
@@ -1162,76 +1151,46 @@ string rounded(double value, int precision) {
     return os.str();
 }
 
-void decision() {
+int itsPosIs(double phi1Avg, double phi2Avg) {
+    int index;
+    for (index=0;index<trainedPhisSize;index++) {
+        if (intersects(phi1Avg, phi2Avg, trainedPhis[index][0], trainedPhis[index][2], trainedPhis[index][1], trainedPhis[index][3]))
+            return index;
+    }
+    return -1;
+}
 
+string itsNameIs(double phi1Avg, double phi2Avg, vector<double> distances) {
+    double minDistance=getMinFromList(distances);
+    int index;
+    for (index=0;index<trainedPhisSize;index++) {
+        if (minDistance == distances[index] && intersects(phi1Avg, phi2Avg, trainedPhis[index][0], trainedPhis[index][2], trainedPhis[index][1], trainedPhis[index][3])) {
+            return trainedObjects[index];
+        }
+    }
+    return "Unknown";
 }
 
 void classification() {
-    string rutina="";
-    ofstream output("reconocimiento.txt");
+    // ofstream output("reconocimiento.txt");
+
     int k;
     for(k=0;k<globalFigures.size();k++) {
         double phi1=globalFigures[k].phi1;
         double phi2=globalFigures[k].phi2;
-        double dX=getDistance(phi1, phi2, phi1X, phi2X);
-        double dO=getDistance(phi1, phi2, phi1O, phi2O);
-        double dI=getDistance(phi1, phi2, phi1I, phi2I);
-        double dL=getDistance(phi1, phi2, phi1L, phi2L);
-        double dR=getDistance(phi1, phi2, phi1R, phi2R);
-        double dDeadmau5=getDistance(phi1, phi2, phi1Deadmau5, phi2Deadmau5);
-        int size = 6;
-        double distances[size];
-        distances[0]=dX;
-        distances[1]=dO;
-        distances[2]=dI;
-        distances[3]=dL;
-        distances[4]=dR;
-        distances[5]=dDeadmau5;
-
-        if (isX(phi1, phi2) && getMinFromArray(distances, size) == dX) {
-            globalFigures[k].whatitis="X";
-            // rutina 1
-            // cout << "X" << endl;
-            // rutina="rutina1 para X con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
+        vector<double> distances;
+        int index;
+        for (index=0;index<trainedPhisSize;index++) {
+            distances.push_back(getDistance(phi1, phi2, trainedPhis[index][0], trainedPhis[index][2]));
         }
-        else if (isI(phi1, phi2) && getMinFromArray(distances, size) == dI) {
-            globalFigures[k].whatitis="I";
-            // cout << "I" << endl;
-            // rutina="rutina1 para I con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
-        }
-        else if (isO(phi1, phi2) && getMinFromArray(distances, size) == dO) {
-            globalFigures[k].whatitis="O";
-            // cout << "O" << endl;
-            // rutina="rutina1 para O con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
-        }
-        else if (isL(phi1, phi2) && getMinFromArray(distances, size) == dL) {
-            globalFigures[k].whatitis="L";
-            // cout << "L" << endl;
-            // rutina="rutina1 para L con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
-        }
-        else if (isR(phi1, phi2) && getMinFromArray(distances, size) == dR) {
-            globalFigures[k].whatitis="R";
-            // cout << "L" << endl;
-            // rutina="rutina1 para R con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
-        }
-        else if (isDeadmau5(phi1, phi2) && getMinFromArray(distances, size) == dDeadmau5) {
-            globalFigures[k].whatitis="Deadmau5";
-            // cout << "L" << endl;
-            // rutina="rutina1 para Deadmau5 con angulo de " + rounded((-1)*globalFigures[k].theta*180/PI, 1) + " grados";
-            // output << rutina << endl;
-        }
-        else {
-            globalFigures[k].whatitis="Unknown";
-            // cout << "desconocido" << endl;
-            // rutina="objeto desconocido";
-            // output << rutina << endl;
-        }
+        globalFigures[k].whatitis=itsNameIs(phi1, phi2, distances);
+        // guardar whatitis   ----->  globalFigures[k].whatitis
+        // guardar theta ---------> globalFigures[k].theta
     }
+}
+
+void decision() {
+
 }
 
 void createWindows() {
@@ -1333,21 +1292,22 @@ void histograms() {
         imshow("C3", histImageC3 );
 }
 
-void phisPlot() {
-    Mat phis = Mat(selectedImage.rows, selectedImage.cols, selectedImage.type());
+void phisPlot(double multiplier, double pointSize) {
+    Mat phis = Mat(selectedImage.rows*multiplier, selectedImage.cols*multiplier, selectedImage.type());
     Vec3b black(0, 0, 0);
     int i,j,k;
+    int offset=5*multiplier;
     //Inicializamos la matriz color toda en color negro
-    for (i=0; i<selectedImage.rows; i++)
+    for (i=0; i<phis.rows; i++)
     {
-        for (j=0; j<selectedImage.cols; j++)
+        for (j=0; j<phis.cols; j++)
         {
             phis.at<Vec3b>(i, j)=black;
         }
     }
     for(k=0;k<globalFigures.size();k++) {
         Scalar color(globalFigures[k].color);
-        circle (phis, Point((int)(globalFigures[k].phi1*selectedImage.cols),(selectedImage.rows)-(int)(globalFigures[k].phi2*selectedImage.rows)),5,color,CV_FILLED);
+        circle (phis, Point((int)(globalFigures[k].phi1*phis.cols),(phis.rows-offset)-(int)(globalFigures[k].phi2*phis.rows)),pointSize,color,CV_FILLED);
     }
     int y=10;
     for(k=0;k<globalFigures.size();k++, y+=10) {
@@ -1358,6 +1318,82 @@ void phisPlot() {
         //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
         putText(phis, textStream.str(), Point(40, y), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
+        if (globalFigures[k].whatitis!="Unknown") {
+            int position=itsPosIs(globalFigures[k].phi1, globalFigures[k].phi2);
+            Scalar objectColor(trainedPhisColors[position][0], trainedPhisColors[position][1], trainedPhisColors[position][2]);
+            circle (phis, Point(phis.cols-40, y-5),5,objectColor,CV_FILLED);
+        }
+    }
+    /*
+    code for showing circles
+    */
+    int index;
+    for(index=0;index<trainedPhisSize;index++) {
+        ellipse(
+            phis, 
+            Point(
+                trainedPhis[index][0] * phis.cols,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ),
+            Size( (trainedPhis[index][1] * phis.cols) , (trainedPhis[index][3] * phis.rows) ),
+            0, 0, 360,
+            Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]), 
+            1, 8 );
+        line(phis, 
+            Point(
+                trainedPhis[index][0] * phis.cols,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ),
+            Point(
+                (trainedPhis[index][0]-trainedPhis[index][1]) * phis.cols,
+                (phis.rows-offset) - (trainedPhis[index][2]) * phis.rows
+                ),
+            Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
+            2, 8, 0  );
+        line(phis, 
+            Point(
+                trainedPhis[index][0] * phis.cols,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ),
+            Point(
+                (trainedPhis[index][0]+trainedPhis[index][1]) * phis.cols,
+                (phis.rows-offset) - (trainedPhis[index][2]) * phis.rows
+                ),
+            Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
+            2, 8, 0  );
+        line(phis, 
+            Point(
+                trainedPhis[index][0] * phis.cols,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ),
+            Point(
+                (trainedPhis[index][0]) * phis.cols,
+                (phis.rows-offset) - (trainedPhis[index][2]-trainedPhis[index][3]) * phis.rows
+                ),
+            Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
+            2, 8, 0  );
+        line(phis, 
+            Point(
+                trainedPhis[index][0] * phis.cols,
+                (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+                ),
+            Point(
+                (trainedPhis[index][0]) * phis.cols,
+                (phis.rows-offset) - (trainedPhis[index][2]+trainedPhis[index][3]) * phis.rows
+                ),
+            Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
+            2, 8, 0  );
+
+        // ostringstream textStream;
+        // textStream<<trainedObjects[index];
+        // //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
+        // putText(phis, textStream.str(), 
+        //     Point(
+        //     (trainedPhis[index][0]+trainedPhis[index][1]+5) * phis.cols,
+        //     (phis.rows-offset) - trainedPhis[index][2] * phis.rows
+        //     ), 
+        //     FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
+
     }
     imshow("Phis (phi1, phi2)", phis);
 }
@@ -1423,10 +1459,10 @@ int main(int argc,char* argv[])
     idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
     //CLEAR FILES
-    ofstream outputLUT("LUT.txt");
-    outputLUT.close();
-    ofstream outputFigures("figures.txt");
-    outputFigures.close();
+    // ofstream outputLUT("LUT.txt");
+    // outputLUT.close();
+    // ofstream outputFigures("figures.txt");
+    // outputFigures.close();
 
     //VideoCapture cap(0); // open the default camera
     //if(!cap.isOpened())  // check if we succeeded
@@ -1474,9 +1510,9 @@ int main(int argc,char* argv[])
     namedWindow("Phis (phi1, phi2)");
     namedWindow("Filtered Image");
     namedWindow("SEGMENTACION");
-    moveWindow("Phis (phi1, phi2)", 1020, 10);
-    moveWindow("Filtered Image", 380, 10);
-    moveWindow("SEGMENTACION", 700, 10);
+    moveWindow("Phis (phi1, phi2)", 30, 300);
+    moveWindow("Filtered Image", 385, 10);
+    moveWindow("SEGMENTACION", 710, 30);
 
     //cap >> currentImage;
 
@@ -1568,7 +1604,10 @@ int main(int argc,char* argv[])
         imshow("SEGMENTACION",segmentedImg);
         classification();
         // draw phis
-        phisPlot();
+        // phisPlot(multiplier, pointSize)
+        // screen size ratio relative to window size
+        // size of points representing objects
+        phisPlot(2, 2);
         // take decision
         //decision();
 
@@ -1594,7 +1633,7 @@ int main(int argc,char* argv[])
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
-                phisPlot();
+                phisPlot(2,2);
                 //decision();
             break;
 
@@ -1618,7 +1657,7 @@ int main(int argc,char* argv[])
             momentos(segmentedImg);
             imshow("SEGMENTACION",segmentedImg);
             classification();
-            phisPlot();
+            phisPlot(2,2);
         }
 
         hover = joypadHover ? 1 : 0;
