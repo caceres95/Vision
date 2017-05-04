@@ -117,12 +117,14 @@ int hover=0;
 SDL_Joystick* m_joystick;
 bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
+
 // for measuring commands and time
 int joypadRollPrev=0, joypadPitchPrev=0, joypadVerticalSpeedPrev=0, joypadYawPrev=0, hoverPrev=0;
 clock_t startTime=0;
 clock_t ellapsedTime = 0;
 
-bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
+bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
+
 
 int Px;
 int Py;
@@ -479,10 +481,10 @@ int randomNumber(int min, int max) //range : [min, max)
 }
 
 /*
-	SEGMENTACION
-	Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
-	la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
-	con los identificadores de cada segmento
+    SEGMENTACION
+    Esta funcion recibe una imagen binarizada y retorna por referencia una imagen segmentada,
+    la imagen de salida estara coloreada segun su region, ademas esta funcion genera una tabla
+    con los identificadores de cada segmento
 
 
 */
@@ -676,6 +678,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                         for (k=1; k<=LUTSize; k++)
                         {
                             //Quien tenga el color del pixel superior sera cambiado por el color del pixel lateral
+
                             if(LUT[k].color==regionColor)
                             {   
                                 regionTemp.color=LUT[idImage[y][x-1]].color;
@@ -703,7 +706,6 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
                                 regionTemp.caracteristicas.m21=0;
                                 LUT.erase(k);
                                 LUT.insert(make_pair(k, regionTemp));
-
                             }
                         }
                     }
@@ -760,7 +762,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     }   
 
 
-    // //Coloreamos la imagen en base a los valores de la LUT
+    //Coloreamos la imagen en base a los valores de la myLUT
     for (i=1; i<binarizedImage.rows-1; i++)
     {
         for (j=1; j<binarizedImage.cols-1; j++)
@@ -778,6 +780,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     vector<unsigned int> indexes;
     unsigned int colorIndex;
     for( k=1; k<=LUTSize; k++)
+
     {
         colorIndex=(unsigned int)((LUT[k].color[0]+LUT[k].color[1]+LUT[k].color[2])/3*100);
         if (colorIndex) {
@@ -857,12 +860,56 @@ unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion
     return 0;
 }
 
+void giraIzq() {
+cout<<"Gira Izquierda"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void giraDer() {
+cout<<"Gira Derecha"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void avanza() {
+cout<<"Avanza"<<endl;
+heli->setAngles(-10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void retrocede() {
+cout<<"Retrocede"<<endl;
+heli->setAngles(10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void sube() {
+cout<<"Sube"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, 10000, 0.0);
+usleep(500000);
+}
+
+void baja() {
+cout<<"Baja"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, -10000, 0.0);
+usleep(500000);
+}
+
 
 //Obtencion de momentos estadisticos
 void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
-    unsigned long long i, j,x,y;
+    //unsigned long long i, j,x,y;
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
@@ -871,6 +918,7 @@ void momentos(Mat &segmentedImage)
 
 
         //Coloreamos la imagen en base a los valores de la LUT
+
     // for (x=0; x<segmentedImage.cols; x++)
     // {
     //     for (y=0; y<segmentedImage.rows; y++)
@@ -899,6 +947,7 @@ void momentos(Mat &segmentedImage)
     //             }
 
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
+
                 /*
                 AGREGAR SUMATORIAS EN ESTE CAMPO
                 Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
@@ -915,6 +964,7 @@ void momentos(Mat &segmentedImage)
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
     //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
+
 
     //         }
 
@@ -985,7 +1035,7 @@ void momentos(Mat &segmentedImage)
         // outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
 
         // For training!
-        // cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
+        //cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
         //
 
         // Dibujamos sobre "segmentedImage" datos relevantes
@@ -1039,6 +1089,7 @@ void momentos(Mat &segmentedImage)
         // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5+10), 
         //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
 
+
         /*
             //MOMENTOS NORMALIZADOS
     double n02;
@@ -1061,24 +1112,24 @@ void momentos(Mat &segmentedImage)
 // double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 // homeros training
-#define trainedPhisSize 6
-string trainedObjects[trainedPhisSize] = {"X", "I", "O", "L", "R", "Deadmau5"};
+#define trainedPhisSize 4
+string trainedObjects[trainedPhisSize] = {"X", "I", "L", "R"};
 // ORDER -->  {PHI1_AVERAGE, PHI1_STANDARD_DEVIATION, PHI2_AVERAGE, PHI2_STANDARD_DEVIATION}
 double trainedPhis[trainedPhisSize][4] = {
-    {0.3291002434, 0.0288278764, 0.0253875885, 0.0039292151}, // X
-    {0.4447836087, 0.0933866007, 0.1189788907, 0.0359672862}, // I
-    {0.3648078675, 0.0100242852, 0.0098792798, 0.0010190414}, // O
-    {0.5555926979, 0.0224679117, 0.1814852988, 0.0193219872}, // L
-    {0.2489313303, 0.0242349705, 0.0023523036, 0.0040109567}, // R
-    {0.1995033381, 0.0025950912, 0.003130226, 0.0005943853} // Deadmau5
+    {0.3661988504, 0.0414660219, 0.0323226694, 0.0070028227}, // X
+    {0.440089257, 0.0295243932, 0.0877471495, 0.0277660379}, // I
+    //{0.3648078675, 0.0100242852, 0.0098792798, 0.0010190414}, // O
+    {0.5599775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
+    {0.2763952578, 0.0093850278, 0.0016686626, 0.0003864559}, // R
+    //{0.1995033381, 0.0025950912, 0.003130226, 0.0005943853}, // Deadmau5
 };
 int trainedPhisColors[trainedPhisSize][3] = {
-    {244, 134, 66}, // X
+    {0, 245, 0}, // X
     {34, 21, 132}, // I
-    {132, 140, 77}, // O
+    //{132, 140, 77}, // O
     {191, 113, 24}, // L
-    {7, 42, 181}, // R
-    {173, 46, 143}, // Deadmau5
+    {0, 245, 245}, // R
+    //{173, 46, 143}, // Deadmau5
 };
 
 // Checks whether (testPhi1, testPhi2) intersects in [range (phi1Avg+-phi1StdDev) and range (phi2Avg+-phi2StdDev)]
@@ -1099,6 +1150,7 @@ double getMinFromList(vector<double> list) {
     }
     return smallest;
 }
+
 
 string rounded(double value, int precision) {
     ostringstream os;
@@ -1129,6 +1181,7 @@ string itsNameIs(double phi1Avg, double phi2Avg, vector<double> distances) {
 
 void classification() {
     // ofstream output("reconocimiento.txt");
+
     int k;
     for(k=0;k<globalFigures.size();k++) {
         double phi1=globalFigures[k].phi1;
@@ -1139,6 +1192,8 @@ void classification() {
             distances.push_back(getDistance(phi1, phi2, trainedPhis[index][0], trainedPhis[index][2]));
         }
         globalFigures[k].whatitis=itsNameIs(phi1, phi2, distances);
+        // guardar whatitis   ----->  globalFigures[k].whatitis
+        // guardar theta ---------> globalFigures[k].theta
     }
 }
 
@@ -1349,9 +1404,11 @@ void phisPlot(double multiplier, double pointSize) {
                 ), 
             FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(255,255,255), 1, CV_AA);
 
+
     }
     imshow("Phis (phi1, phi2)", phis);
 }
+
 
 int main(int argc,char* argv[])
 {
@@ -1378,43 +1435,39 @@ int main(int argc,char* argv[])
 
     */
 
+    Vec3b aux(111,222,255);
+    map<unsigned int,Vec3b> idTable;
+    
+    idTable.insert(make_pair(0, aux));
+    aux.val[0]=11;
+    aux.val[1]=22;
+    aux.val[2]=33;
+
+    idTable.insert(make_pair(1, aux));
+
+    aux.val[0]=44;
+    aux.val[1]=55;
+    aux.val[2]=66;
 
 
-
-
-	Vec3b aux(111,222,255);
-	map<unsigned int,Vec3b> idTable;
-	
-	idTable.insert(make_pair(0, aux));
-	aux.val[0]=11;
-	aux.val[1]=22;
-	aux.val[2]=33;
-
-	idTable.insert(make_pair(1, aux));
-
-		aux.val[0]=44;
-	aux.val[1]=55;
-	aux.val[2]=66;
-
-
-	idTable.insert(make_pair(2, aux));
+    idTable.insert(make_pair(2, aux));
 
 	aux.val[0]=77;
 	aux.val[1]=88;
 	aux.val[2]=99;
 
-	idTable.insert(make_pair(3, aux));
+    idTable.insert(make_pair(3, aux));
 
 
-	//Experimento
-	//Declaramos matriz 3 x 3
-	unsigned int matriz[2][2];
-	matriz[0][0]=2;
-	matriz[0][1]=3;
-	matriz[1][0]=4;
-	matriz[1][1]=0;
+    //Experimento
+    //Declaramos matriz 3 x 3
+    unsigned int matriz[2][2];
+    matriz[0][0]=2;
+    matriz[0][1]=3;
+    matriz[1][0]=4;
+    matriz[1][1]=0;
 
-	idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
+    idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
 
     //CLEAR FILES
     // ofstream outputLUT("LUT.txt");
@@ -1422,18 +1475,19 @@ int main(int argc,char* argv[])
     // ofstream outputFigures("figures.txt");
     // outputFigures.close();
 
-    VideoCapture cap(0); // open the default camera
-    if(!cap.isOpened())  // check if we succeeded
-        return -1;
+    //VideoCapture cap(0); // open the default camera
+    //if(!cap.isOpened())  // check if we succeeded
+    //    return -1;
     // establishing connection with the quadcopter
     heli = new CHeli();
-    
+
     // this class holds the image from the drone 
+
     image = new CRawImage(320,240);
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
+    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = 0.0;
 
     // Destination OpenCV Mat   
     Mat currentImage = Mat(240, 320, CV_8UC3);
@@ -1471,7 +1525,7 @@ int main(int argc,char* argv[])
     moveWindow("Filtered Image", 385, 10);
     moveWindow("SEGMENTACION", 710, 30);
 
-    cap >> currentImage;
+    //cap >> currentImage;
 
     selectedImage = currentImage;
     while (stop == false)
@@ -1479,6 +1533,7 @@ int main(int argc,char* argv[])
 
         // Clear the console
         // printf("\033[2J\033[1;1H");
+
 
         if (useJoystick)
         {
@@ -1492,6 +1547,8 @@ int main(int argc,char* argv[])
             joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
             joypadLand = SDL_JoystickGetButton(m_joystick, 2);
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
+            joypadScan = SDL_JoystickGetButton(m_joystick, 3);
+            
         }
 
         Vec3b aux;
@@ -1513,11 +1570,12 @@ int main(int argc,char* argv[])
         // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        cap >> currentImage;
 
+        //cap >> currentImage;
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-        // imshow("ParrotCam", currentImage);
+
+        imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -1563,7 +1621,7 @@ int main(int argc,char* argv[])
         // size of points representing objects
         phisPlot(2, 2);
         // take decision
-        decision();
+        //decision();
 
         char key = waitKey(5);
         switch (key) {
@@ -1573,21 +1631,22 @@ int main(int argc,char* argv[])
             case 's': height = 20000.0; break;
             case 'q': heli->takeoff(); break;
             case 'e': heli->land(); break;
-            case 'z': heli->switchCamera(0); break;
-            case 'x': heli->switchCamera(1); break;
-            case 'c': heli->switchCamera(2); break;
-            case 'v': heli->switchCamera(3); break;
+            case 'z': giraIzq(); break;
+            case 'x': giraDer(); break;
+            case 'c': avanza(); break;
+            case 'v': retrocede(); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
-            case 'i': pitch = -20000.0; break;
-            case 'k': pitch = 20000.0; break;
+            case 'i': sube(); break;
+            case 'k': baja(); break;
             case 'h': hover = (hover + 1) % 2; break;
             case 'b': 
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
-                decision();
+                phisPlot(2,2);
+                //decision();
             break;
 
             case '1': selected=1; break;
@@ -1604,6 +1663,15 @@ int main(int argc,char* argv[])
         if (joypadLand) {
             heli->land();
         }
+
+        if (joypadScan){
+            segment(filteredImage,segmentedImg);
+            momentos(segmentedImg);
+            imshow("SEGMENTACION",segmentedImg);
+            classification();
+            phisPlot(2,2);
+        }
+
         hover = joypadHover ? 1 : 0;
 
         // joypadRoll=roll;
@@ -1641,10 +1709,10 @@ int main(int argc,char* argv[])
         }
     
         // image is captured
-        // heli->renewImage(image);
+        heli->renewImage(image);
 
         // // Copy to OpenCV Mat
-        // rawToMat(currentImage, image);
+        rawToMat(currentImage, image);
         
 
         usleep(15000);
