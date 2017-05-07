@@ -1062,7 +1062,11 @@ int obstacleRadius = 20;
 int robotRadius = 1;
 int maxRadius=128;
 int pointRadius=10;
-Scalar obstacleColor=Scalar(255,0,0);
+Scalar obstacleColor=Scalar(0,0,0);
+
+void gotaDeAceite(Point semilla) {
+    cout << stage.at<Vec3b>(semilla.y, semilla.x) << endl;
+}
 
 Point topLeft, topRight, bottomRight, bottomLeft;
 void stageSpace() {
@@ -1089,10 +1093,11 @@ void refresh() {
     obstacles();
     // circle(stage, robot, robotRadius, Scalar(255,0,0), -1);
     cvtColor( stage, stage, CV_BGR2GRAY );
-    threshold( stage, stage, 128, 255,0 );
+    stage = stage > 128;
+    gotaDeAceite(Point(stage.cols/2, stage.rows/2));
     imshow( window_name, stage );   
 }
-
+ 
 void on_radius_change( int, void* ){
    refresh();
 }
@@ -1122,16 +1127,18 @@ void mouseHandler(int event, int x, int y, int flags, void *param)
         if (moveObstable1) {
             obstacle1.x=x;
             obstacle1.y=y;
+             refresh();
         }
         if (moveObstable2) {
             obstacle2.x=x;
             obstacle2.y=y;
+             refresh();
         }
         if (moveRobot) {
             robot.x=x;
             robot.y=y;
+             refresh();
         }
-        refresh();
         /* draw a rectangle*/
         break;
         
