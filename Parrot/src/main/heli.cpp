@@ -117,7 +117,7 @@ int hover=0;
 SDL_Joystick* m_joystick;
 bool useJoystick;
 int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
-bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover;
+bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
 
 int Px;
 int Py;
@@ -754,7 +754,11 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     }   
 
 
+<<<<<<< HEAD
     // //Coloreamos la imagen en base a los valores de la LUT
+=======
+    //Coloreamos la imagen en base a los valores de la myLUT
+>>>>>>> WithParrotCam
     for (i=1; i<binarizedImage.rows-1; i++)
     {
         for (j=1; j<binarizedImage.cols-1; j++)
@@ -851,12 +855,60 @@ unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion
     return 0;
 }
 
+void giraIzq() {
+cout<<"Gira Izquierda"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void giraDer() {
+cout<<"Gira Derecha"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 10000.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void avanza() {
+cout<<"Avanza"<<endl;
+heli->setAngles(-10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void retrocede() {
+cout<<"Retrocede"<<endl;
+heli->setAngles(10000, 0.0, 0.0, 0.0, 0.0);
+usleep(500000);
+}
+
+void sube() {
+cout<<"Sube"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, 10000, 0.0);
+usleep(500000);
+}
+
+void baja() {
+cout<<"Baja"<<endl;
+//hover
+//heli->setAngles(pitch, roll, yaw, height, hover);
+heli->setAngles(0.0, 0.0, 0, -10000, 0.0);
+usleep(500000);
+}
+
 
 //Obtencion de momentos estadisticos
 void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
+<<<<<<< HEAD
     unsigned long long i, j,x,y;
+=======
+    //unsigned long long i, j,x,y;
+>>>>>>> WithParrotCam
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
@@ -979,7 +1031,7 @@ void momentos(Mat &segmentedImage)
         // outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
 
         // For training!
-        // cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
+        //cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
         //
 
         // Dibujamos sobre "segmentedImage" datos relevantes
@@ -1055,15 +1107,24 @@ void momentos(Mat &segmentedImage)
 // double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 // homeros training
+<<<<<<< HEAD
 #define trainedPhisSize 6
+=======
+#define trainedPhisSize 4
+>>>>>>> WithParrotCam
 string trainedObjects[trainedPhisSize] = {"X", "I", "L", "R"};
 // ORDER -->  {PHI1_AVERAGE, PHI1_STANDARD_DEVIATION, PHI2_AVERAGE, PHI2_STANDARD_DEVIATION}
 double trainedPhis[trainedPhisSize][4] = {
     {0.3661988504, 0.0414660219, 0.0323226694, 0.0070028227}, // X
     {0.440089257, 0.0295243932, 0.0877471495, 0.0277660379}, // I
     //{0.3648078675, 0.0100242852, 0.0098792798, 0.0010190414}, // O
+<<<<<<< HEAD
     {0.5499775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
     {0.2763952578, 0.0123850278, 0.0016686626, 0.0020864559}, // R
+=======
+    {0.5599775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
+    {0.2763952578, 0.0093850278, 0.0016686626, 0.0003864559}, // R
+>>>>>>> WithParrotCam
     //{0.1995033381, 0.0025950912, 0.003130226, 0.0005943853}, // Deadmau5
 };
 int trainedPhisColors[trainedPhisSize][3] = {
@@ -1123,6 +1184,7 @@ string itsNameIs(double phi1Avg, double phi2Avg, vector<double> distances) {
 
 void classification() {
     // ofstream output("reconocimiento.txt");
+
     int k;
     for(k=0;k<globalFigures.size();k++) {
         double phi1=globalFigures[k].phi1;
@@ -1133,6 +1195,8 @@ void classification() {
             distances.push_back(getDistance(phi1, phi2, trainedPhis[index][0], trainedPhis[index][2]));
         }
         globalFigures[k].whatitis=itsNameIs(phi1, phi2, distances);
+        // guardar whatitis   ----->  globalFigures[k].whatitis
+        // guardar theta ---------> globalFigures[k].theta
     }
 }
 
@@ -1276,8 +1340,13 @@ void phisPlot(double multiplier, double pointSize) {
     */
     int index;
     for(index=0;index<trainedPhisSize;index++) {
+<<<<<<< HEAD
 
         // show area by using ellipse
+=======
+        
+       // show area by using ellipse
+>>>>>>> WithParrotCam
         ellipse(
             phis, 
             Point(
@@ -1335,8 +1404,14 @@ void phisPlot(double multiplier, double pointSize) {
             Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
             2, 8, 0  );
 
+<<<<<<< HEAD
         // put text to indicate what each area represent
          putText(phis, trainedObjects[index], 
+=======
+        
+        // put text to indicate what each area represent
+        putText(phis, trainedObjects[index], 
+>>>>>>> WithParrotCam
             Point(
                 (trainedPhis[index][0]+trainedPhis[index][1]) * phis.cols+offset,
                 (phis.rows-offset) - trainedPhis[index][2] * phis.rows
@@ -1346,6 +1421,7 @@ void phisPlot(double multiplier, double pointSize) {
     }
     imshow("Phis (phi1, phi2)", phis);
 }
+
 
 int main(int argc,char* argv[])
 {
@@ -1372,10 +1448,22 @@ int main(int argc,char* argv[])
 
     */
 
+    Vec3b aux(111,222,255);
+    map<unsigned int,Vec3b> idTable;
+    
+    idTable.insert(make_pair(0, aux));
+    aux.val[0]=11;
+    aux.val[1]=22;
+    aux.val[2]=33;
+
+    idTable.insert(make_pair(1, aux));
+
+    aux.val[0]=44;
+    aux.val[1]=55;
+    aux.val[2]=66;
 
 
-
-
+<<<<<<< HEAD
     Vec3b aux(111,222,255);
     map<unsigned int,Vec3b> idTable;
     
@@ -1391,6 +1479,8 @@ int main(int argc,char* argv[])
     aux.val[2]=66;
 
 
+=======
+>>>>>>> WithParrotCam
     idTable.insert(make_pair(2, aux));
 
     aux.val[0]=77;
@@ -1416,18 +1506,25 @@ int main(int argc,char* argv[])
     // ofstream outputFigures("figures.txt");
     // outputFigures.close();
 
+<<<<<<< HEAD
     VideoCapture cap(1); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
+=======
+    //VideoCapture cap(0); // open the default camera
+    //if(!cap.isOpened())  // check if we succeeded
+    //    return -1;
+>>>>>>> WithParrotCam
     // establishing connection with the quadcopter
     heli = new CHeli();
-    
+
     // this class holds the image from the drone 
+
     image = new CRawImage(320,240);
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = 0.0;
+    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = 0.0;
 
     // Destination OpenCV Mat   
     Mat currentImage = Mat(240, 320, CV_8UC3);
@@ -1465,14 +1562,14 @@ int main(int argc,char* argv[])
     moveWindow("Filtered Image", 385, 10);
     moveWindow("SEGMENTACION", 710, 30);
 
-    cap >> currentImage;
+    //cap >> currentImage;
 
     selectedImage = currentImage;
     while (stop == false)
     {
 
         // Clear the console
-        printf("\033[2J\033[1;1H");
+       printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -1480,17 +1577,19 @@ int main(int argc,char* argv[])
             SDL_PollEvent(&event);
 
             joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 3);
+            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5);
             joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
             joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
             joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
             joypadLand = SDL_JoystickGetButton(m_joystick, 2);
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
+            joypadScan = SDL_JoystickGetButton(m_joystick, 3);
+            
         }
 
         Vec3b aux;
 
-        // prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
         printf("===================== Parrot Basic Example =====================\n\n");
         fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
         fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
@@ -1504,14 +1603,15 @@ int main(int argc,char* argv[])
         fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
         fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
         fprintf(stdout, "  Land    : %d \n", joypadLand);
+        fprintf(stdout, "  Scan    : %d \n", joypadScan);
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        cap >> currentImage;
-
+        //cap >> currentImage;
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-        // imshow("ParrotCam", currentImage);
+
+        imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -1567,22 +1667,27 @@ int main(int argc,char* argv[])
             case 's': height = 20000.0; break;
             case 'q': heli->takeoff(); break;
             case 'e': heli->land(); break;
-            case 'z': heli->switchCamera(0); break;
-            case 'x': heli->switchCamera(1); break;
-            case 'c': heli->switchCamera(2); break;
-            case 'v': heli->switchCamera(3); break;
+            case 'z': giraIzq(); break;
+            case 'x': giraDer(); break;
+            case 'c': avanza(); break;
+            case 'v': retrocede(); break;
             case 'j': roll = -20000.0; break;
             case 'l': roll = 20000.0; break;
-            case 'i': pitch = -20000.0; break;
-            case 'k': pitch = 20000.0; break;
+            case 'i': sube(); break;
+            case 'k': baja(); break;
             case 'h': hover = (hover + 1) % 2; break;
             case 'b': 
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
+<<<<<<< HEAD
                 phisPlot(2, 2);
                 decision();
+=======
+                phisPlot(2,2);
+                //decision();
+>>>>>>> WithParrotCam
             break;
 
             case '1': selected=1; break;
@@ -1599,6 +1704,15 @@ int main(int argc,char* argv[])
         if (joypadLand) {
             heli->land();
         }
+
+        if (joypadScan){
+            segment(filteredImage,segmentedImg);
+            momentos(segmentedImg);
+            imshow("SEGMENTACION",segmentedImg);
+            classification();
+            phisPlot(2,2);
+        }
+
         hover = joypadHover ? 1 : 0;
 
         //setting the drone angles
@@ -1614,10 +1728,10 @@ int main(int argc,char* argv[])
         }
     
         // image is captured
-        // heli->renewImage(image);
+        heli->renewImage(image);
 
         // // Copy to OpenCV Mat
-        // rawToMat(currentImage, image);
+        rawToMat(currentImage, image);
         
 
         usleep(15000);
