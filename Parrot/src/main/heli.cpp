@@ -754,11 +754,7 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     }   
 
 
-<<<<<<< HEAD
     // //Coloreamos la imagen en base a los valores de la LUT
-=======
-    //Coloreamos la imagen en base a los valores de la myLUT
->>>>>>> WithParrotCam
     for (i=1; i<binarizedImage.rows-1; i++)
     {
         for (j=1; j<binarizedImage.cols-1; j++)
@@ -904,11 +900,7 @@ usleep(500000);
 void momentos(Mat &segmentedImage)
 {
     unsigned  id,k,figuresSize;
-<<<<<<< HEAD
     unsigned long long i, j,x,y;
-=======
-    //unsigned long long i, j,x,y;
->>>>>>> WithParrotCam
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
@@ -1107,24 +1099,16 @@ void momentos(Mat &segmentedImage)
 // double phi1L=0.325014, phi2L=0.0550844737, phi1DevL=0.0173370089, phi2DevL=0.0074505507;
 
 // homeros training
-<<<<<<< HEAD
-#define trainedPhisSize 6
-=======
+
 #define trainedPhisSize 4
->>>>>>> WithParrotCam
 string trainedObjects[trainedPhisSize] = {"X", "I", "L", "R"};
 // ORDER -->  {PHI1_AVERAGE, PHI1_STANDARD_DEVIATION, PHI2_AVERAGE, PHI2_STANDARD_DEVIATION}
 double trainedPhis[trainedPhisSize][4] = {
     {0.3661988504, 0.0414660219, 0.0323226694, 0.0070028227}, // X
     {0.440089257, 0.0295243932, 0.0877471495, 0.0277660379}, // I
     //{0.3648078675, 0.0100242852, 0.0098792798, 0.0010190414}, // O
-<<<<<<< HEAD
     {0.5499775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
     {0.2763952578, 0.0123850278, 0.0016686626, 0.0020864559}, // R
-=======
-    {0.5599775581, 0.0225243932, 0.1812142186, 0.0277660379}, // L
-    {0.2763952578, 0.0093850278, 0.0016686626, 0.0003864559}, // R
->>>>>>> WithParrotCam
     //{0.1995033381, 0.0025950912, 0.003130226, 0.0005943853}, // Deadmau5
 };
 int trainedPhisColors[trainedPhisSize][3] = {
@@ -1340,13 +1324,8 @@ void phisPlot(double multiplier, double pointSize) {
     */
     int index;
     for(index=0;index<trainedPhisSize;index++) {
-<<<<<<< HEAD
 
         // show area by using ellipse
-=======
-        
-       // show area by using ellipse
->>>>>>> WithParrotCam
         ellipse(
             phis, 
             Point(
@@ -1404,14 +1383,9 @@ void phisPlot(double multiplier, double pointSize) {
             Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
             2, 8, 0  );
 
-<<<<<<< HEAD
-        // put text to indicate what each area represent
-         putText(phis, trainedObjects[index], 
-=======
         
         // put text to indicate what each area represent
-        putText(phis, trainedObjects[index], 
->>>>>>> WithParrotCam
+        putText(phis, trainedObjects[index],
             Point(
                 (trainedPhis[index][0]+trainedPhis[index][1]) * phis.cols+offset,
                 (phis.rows-offset) - trainedPhis[index][2] * phis.rows
@@ -1462,25 +1436,6 @@ int main(int argc,char* argv[])
     aux.val[1]=55;
     aux.val[2]=66;
 
-
-<<<<<<< HEAD
-    Vec3b aux(111,222,255);
-    map<unsigned int,Vec3b> idTable;
-    
-    idTable.insert(make_pair(0, aux));
-    aux.val[0]=11;
-    aux.val[1]=22;
-    aux.val[2]=33;
-
-    idTable.insert(make_pair(1, aux));
-
-        aux.val[0]=44;
-    aux.val[1]=55;
-    aux.val[2]=66;
-
-
-=======
->>>>>>> WithParrotCam
     idTable.insert(make_pair(2, aux));
 
     aux.val[0]=77;
@@ -1506,15 +1461,9 @@ int main(int argc,char* argv[])
     // ofstream outputFigures("figures.txt");
     // outputFigures.close();
 
-<<<<<<< HEAD
     VideoCapture cap(1); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
         return -1;
-=======
-    //VideoCapture cap(0); // open the default camera
-    //if(!cap.isOpened())  // check if we succeeded
-    //    return -1;
->>>>>>> WithParrotCam
     // establishing connection with the quadcopter
     heli = new CHeli();
 
@@ -1562,7 +1511,7 @@ int main(int argc,char* argv[])
     moveWindow("Filtered Image", 385, 10);
     moveWindow("SEGMENTACION", 710, 30);
 
-    //cap >> currentImage;
+    cap >> currentImage;
 
     selectedImage = currentImage;
     while (stop == false)
@@ -1607,11 +1556,11 @@ int main(int argc,char* argv[])
         fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        //cap >> currentImage;
+        cap >> currentImage;
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
 
-        imshow("ParrotCam", currentImage);
+        //imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -1681,13 +1630,8 @@ int main(int argc,char* argv[])
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
-<<<<<<< HEAD
-                phisPlot(2, 2);
-                decision();
-=======
                 phisPlot(2,2);
                 //decision();
->>>>>>> WithParrotCam
             break;
 
             case '1': selected=1; break;
@@ -1728,10 +1672,10 @@ int main(int argc,char* argv[])
         }
     
         // image is captured
-        heli->renewImage(image);
+        //heli->renewImage(image);
 
         // // Copy to OpenCV Mat
-        rawToMat(currentImage, image);
+        //rawToMat(currentImage, image);
         
 
         usleep(15000);
