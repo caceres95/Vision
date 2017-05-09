@@ -29,6 +29,7 @@ using namespace std;
 using namespace cv;
 
 #include <sstream>
+#include <queue>
 
 #define PI 3.14159265
 
@@ -155,200 +156,6 @@ double yiqMat[3][3] = {
     {0.312, -0.523, 0.211}
 };
 
-// segmentation code
-class Pix{
-public:
-    long long int x, y;
-    int val;
-    int color;
-};
-
-class Blob{
-public:
-
-    vector<Pix> elements;
-    long long int area() {return (long long int) elements.size();}
-    int color;
-    long long int m00, m01, m02, m10, m20, m11;
-    double x_centroid, y_centroid;
-    double M00, M02, M20, M11;
-    double n20, n02, n11;
-    double phi1, phi2;
-    double theta;
-};
-
-void stat_moments(Blob &obj){
-    obj.m00 = obj.area();
-    obj.m10 = 0;
-    obj.m01 = 0;
-    obj.m20 = 0;
-    obj.m02 = 0;
-    obj.m11 = 0;
-    for (long long int i = 0; i < obj.elements.size(); i++){
-        obj.m10 += obj.elements[i].x;
-        obj.m01 += obj.elements[i].y;
-        obj.m20 += (obj.elements[i].x * obj.elements[i].x);
-        obj.m02 += (obj.elements[i].y * obj.elements[i].y);
-        obj.m11 += (obj.elements[i].x * obj.elements[i].y); 
-    }
-    obj.x_centroid = (double) obj.m10/obj.m00;
-    obj.y_centroid = (double) obj.m01/obj.m00;
-}
-
-void central_moments(Blob &obj){
-    obj.M00 = obj.m00;
-    obj.M02 = obj.m02 - (obj.y_centroid*obj.m01);
-    obj.M20 = obj.m20 - (obj.x_centroid*obj.m10);
-    obj.M11 = obj.m11 - (obj.x_centroid*obj.m01);
-}
-
-void invariant_moments(Blob &obj){
-    obj.n20 = obj.M20/(obj.M00*obj.M00);
-    obj.n02 = obj.M02/(obj.M00*obj.M00);
-    obj.n11 = obj.M11;
-
-    obj.phi1 = obj.n20 + obj.n02;
-    obj.phi2 = (obj.n20 - obj.n02)*(obj.n20 - obj.n02) + (4*obj.n11*obj.n11);
-
-    obj.theta = 0.5*atan2(2*obj.M11, obj.M20 - obj.M02);        
-}
-
-void mergeRegions(vector<Blob> &region_vec, int index_1, int index_2, Mat &blobTemp){
-    Blob *masterBlob, *slaveBlob;
-    Pix masterPix, slavePix;
-
-    masterBlob = &region_vec[index_2];
-    slaveBlob = &region_vec[index_1];
-
-    masterPix = masterBlob->elements.back();
-
-    for(int i = 0; i < slaveBlob->elements.size(); i++){
-        slavePix = slaveBlob->elements[i];
-        masterBlob->elements.push_back(slavePix);
-        blobTemp.at<ushort>(slavePix.y,slavePix.x) = (ushort) masterPix.color;
-    }
-    slaveBlob->elements.clear();
-    slaveBlob->color = 0;
-}
-
-void blobColoring (Mat &sourceImage){
-
-    Mat colorImg(sourceImage.rows, sourceImage.cols, CV_8UC3, Scalar::all(0));
-    Blob blob, *ptr2blob;
-    Pix pc, pi, ps;
-    Mat blobTemp(sourceImage.rows, sourceImage.cols, CV_16UC1, Scalar::all(0));
-
-    vector<Blob> regions, segments;
-
-    int color; 
-    int numofReg = 0;
-
-    cout << "Size img: " << sourceImage.rows << " x " << sourceImage.cols << endl;
-    cout << "No. Pixels: " << sourceImage.rows*sourceImage.cols << endl;
-
-    for (long long int y = 1; y < sourceImage.rows; y++){
-
-        for (long long int x = 1; x < sourceImage.cols; x++){
-
-            pc.x = x; pc.y = y;
-            pc.val = (int) sourceImage.at<uchar>(y,x);
-
-            pi.x = x-1; pi.y = y;
-            pi.color = (int) blobTemp.at<ushort>(y,x-1);
-
-            ps.x = x; ps.y = y-1;
-            ps.color = (int) blobTemp.at<ushort>(y-1,x);
-
-            if(pc.val == 0) {}
-            else{
-                if(pi.color == 0 && ps.color == 0){
-                    color = (int) regions.size() + 1;
-                    pc.color = color;
-                    blob.elements.push_back(pc);
-                    blob.color = color;
-                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
-                    regions.push_back(blob);
-                    blob.elements.clear();
-                }
-                else if (pi.color != 0 && ps.color == 0){
-                    pc.color = pi.color;
-                    ptr2blob = &regions[pc.color-1];
-                    (*ptr2blob).elements.push_back(pc);
-                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
-                }
-                else if (pi.color == 0 && ps.color != 0){
-                    pc.color = ps.color;
-                    ptr2blob = &regions[pc.color-1];
-                    (*ptr2blob).elements.push_back(pc);
-                    blobTemp.at<ushort>(y,x) = (ushort) pc.color;
-                }
-                else if (pi.color != 0 && ps.color != 0){
-                        pc.color = ps.color;
-                        ptr2blob = &regions[pc.color-1];
-                        (*ptr2blob).elements.push_back(pc);
-                        blobTemp.at<ushort>(y,x) = (ushort) pc.color;
-
-                    if (pi.color != ps.color){
-                        mergeRegions(regions, pi.color-1, ps.color-1, blobTemp);
-                    }
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < regions.size(); i++){
-        if (regions[i].color != 0){
-            segments.push_back(regions[i]);
-        }
-    }
-
-    for (int i = 0; i < segments.size(); i++){
-        segments[i].color = i;  
-        uchar b = (uchar) rand() % 256;
-        uchar g = (uchar) rand() % 256;
-        uchar r = (uchar) rand() % 256;
-
-        for (int j = 0; j < segments[i].elements.size(); j++){
-            Vec3b & color = colorImg.at<Vec3b>(segments[i].elements[j].y,segments[i].elements[j].x);
-            color[0] = b;
-            color[1] = g;
-            color[2] = r;
-        }
-    }
-
-    cout << "Number of regions: " << segments.size() << endl;
-    for (int i=0; i<segments.size(); i++){
-        stat_moments(segments[i]);
-        central_moments(segments[i]);
-        invariant_moments(segments[i]);
-
-        cout << setprecision(2) << fixed;
-        cout << "Area: " << i << " " << segments[i].area() << " ";
-        cout << "m00: " << segments[i].m00 << " ";
-        cout << "m01: " << segments[i].m01 << " ";
-        cout << "m10: " << segments[i].m10 << " ";
-        cout << "m02: " << segments[i].m02 << " ";
-        cout << "m20: " << segments[i].m20 << " ";
-        cout << "m11: " << segments[i].m11 << " ";
-        cout << "X Centroid: " << segments[i].x_centroid << " ";
-        cout << "Y Centroid " << segments[i].y_centroid << endl;
-        cout << "M00: " << segments[i].M00 << " ";
-        cout << "M02: " << segments[i].M02 << " ";
-        cout << "M20: " << segments[i].M20 << " ";
-        cout << "M11: " << segments[i].M11 << endl;
-        cout << "n02: " << segments[i].n02 << " ";
-        cout << "n20: " << segments[i].n20 << " ";
-        cout << "n11: " << segments[i].n11 << endl;
-        cout << "phi1: " << segments[i].phi1 << " ";
-        cout << "phi2: " << segments[i].phi2 << " ";
-        cout << "theta: " << segments[i].theta * 180/PI << endl << endl;
-        // cout << segments[i].phi1 << "," << segments[i].phi2 << endl;
-
-    }
-
-    imshow( "Color image", colorImg );
-}
-
 void bgr2yiq(const Mat &sourceImage, Mat &destinationImage) {
     if (destinationImage.empty())
         destinationImage = Mat(sourceImage.rows, sourceImage.cols, sourceImage.type());
@@ -472,7 +279,7 @@ int randomNumber(int min, int max) //range : [min, max)
    static bool first = true;
    if ( first ) 
    {  
-      srand(time(NULL)); //seeding for the first time only!
+      srand(time(NULL)); //seed for the first time only!
       first = false;
    }
    return min + rand() % (max - min);
@@ -527,8 +334,6 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
     Vec3b black(0, 0, 0);
     Vec3b regionColor;
     Vec3b Pi,Ps, Pc; //Para identificar los tres pixeles analizadores
-    ofstream outputFile;
-    // outputFile.open("LUT.txt", std::ios_base::app);
 
     if (segmentedImage.empty())
     segmentedImage = Mat(binarizedImage.rows, binarizedImage.cols, binarizedImage.type());
@@ -830,9 +635,8 @@ void segment(Mat &binarizedImage, Mat &segmentedImage)
         caracteristicas.m12=tempPatch[indexes[k]].m12;
         caracteristicas.m21=tempPatch[indexes[k]].m21;
         globalFigures.insert(make_pair(k, caracteristicas));
-        // outputFile << "\nID: "<<IntToString(k)<<" Color: "<<IntToString(tempPatch[indexes[k]].color[0])<<" "<<IntToString(tempPatch[indexes[k]].color[1])<<" "<<IntToString(tempPatch[indexes[k]].color[2])<<" Area: "<<IntToString(tempPatch[indexes[k]].area)<<"\n";
+       
     }
-    // outputFile.close();
 }
 
 unsigned int getIdByColor(Vec3b color,  map<unsigned int, struct caracterizacion> figures)
@@ -910,60 +714,6 @@ void momentos(Mat &segmentedImage)
     Vec3b black(0,0,0);
     id=0;
     struct caracterizacion caracteristicas;
-    ofstream outputFile;
-    // outputFile.open("figures.txt", std::ios_base::app);
-
-
-        //Coloreamos la imagen en base a los valores de la LUT
-    // for (x=0; x<segmentedImage.cols; x++)
-    // {
-    //     for (y=0; y<segmentedImage.rows; y++)
-    //     {
-    //         if(segmentedImage.at<Vec3b>(y, x)!=black)
-    //         {
-    //             //Existe este color en la tabla de figuras?
-    //             if(!exists(segmentedImage.at<Vec3b>(y, x),figures))
-    //             {
-    //                 //No existe, crea un nuevo id
-    //                 caracteristicas.color=segmentedImage.at<Vec3b>(y, x);
-    //                 caracteristicas.area=0;
-    //                 caracteristicas.m00=0;
-    //                 caracteristicas.m10=0;
-    //                 caracteristicas.m20=0;
-    //                 caracteristicas.m30=0;
-    //                 caracteristicas.m01=0;
-    //                 caracteristicas.m02=0;
-    //                 caracteristicas.m03=0;
-    //                 caracteristicas.m11=0;
-    //                 caracteristicas.m12=0;
-    //                 caracteristicas.m21=0;
-
-    //                 figures.insert(make_pair(id, caracteristicas));
-    //                 id++;
-    //             }
-
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].area++;
-                /*
-                AGREGAR SUMATORIAS EN ESTE CAMPO
-                Y AAGREGAR MOMENTO EN STRUCT CARACTERIZACION
-                */
-                /*SE COMIENZAN A OBTENER MOMENTOS ORDINARIOS*/
-
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m00++; /* m00= [sum x sum y] 1 */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m10+=x; /* m00= [sum x sum y] x */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m20+=pow(x,2); /* m00= [sum x sum y] x² */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m30+=pow(x,3); /* m00= [sum x sum y] x³ */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m01+=y; /* m00= [sum x sum y] y */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m02+=pow(y,2); /* m00= [sum x sum y] y² */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m03+=pow(y,3); /* m00= [sum x sum y] y³ */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m11+=x*y; /* m00= [sum x sum y] x*y */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m12+=x*pow(y,2); /* m00= [sum x sum y] x*y² */
-    //             figures[getIdByColor(segmentedImage.at<Vec3b>(y, x), figures)].m21+=pow(x,2)*y; /* m00= [sum x sum y] x²*y */
-
-    //         }
-
-    //     }
-    // }
 
     //OBTENEMOS MOMENTOS CENTRALIZADOS (Para estos ya no necesitamos iterar la figura)
     figuresSize=globalFigures.size();
@@ -1014,20 +764,6 @@ void momentos(Mat &segmentedImage)
     figuresSize=globalFigures.size();
     for( k=0; k<figuresSize; k++)
     {
-        // outputFile << "\nID: "<<IntToString(k)<<" | Color: "<<IntToString(globalFigures[k].color[0])<<" "<<IntToString(globalFigures[k].color[1])<<" "<<IntToString(globalFigures[k].color[2])<<" | Area: "<<IntToString(globalFigures[k].area)<<" ";
-        // outputFile<<"| m00: "<<IntToString(globalFigures[k].m00)<<" | m10: "<<IntToString(globalFigures[k].m10)<<" | m20: "<<IntToString(globalFigures[k].m20)<<" | m30: "<<IntToString(globalFigures[k].m30);
-        // outputFile<<" | m01: "<<IntToString(globalFigures[k].m01)<<" | m02: "<<IntToString(globalFigures[k].m02)<<" | m03: "<<IntToString(globalFigures[k].m03);
-        // outputFile<<" | m11: "<<IntToString(globalFigures[k].m11)<<" | m12: "<<IntToString(globalFigures[k].m12)<<" | m21: "<<IntToString(globalFigures[k].m21)<<" | XProm: "<<DoubleToString(globalFigures[k].xPromedio)<<" | YProm: "<<DoubleToString(globalFigures[k].yPromedio)<<" ";
-        // outputFile<<" | u10: "<<IntToString(globalFigures[k].u10)<<" | u01: "<<IntToString(globalFigures[k].u01)<<" | u20: "<<DoubleToString(globalFigures[k].u20);
-        // outputFile<<" | u02: "<<DoubleToString(globalFigures[k].u02)<<" | u11: "<<DoubleToString(globalFigures[k].u11)<<" | u30: "<<DoubleToString(globalFigures[k].u30);
-        // outputFile<<" | u03: "<<DoubleToString(globalFigures[k].u03)<<" | u12: "<<DoubleToString(globalFigures[k].u12)<<" | u21: "<<DoubleToString(globalFigures[k].u21);
-        // outputFile<<" | n02: "<<DoubleToString(globalFigures[k].n02)<<" | n03: "<<DoubleToString(globalFigures[k].n03)<<" | n11: "<<DoubleToString(globalFigures[k].n11);
-        // outputFile<<" | n12: "<<DoubleToString(globalFigures[k].n12)<<" | n20: "<<DoubleToString(globalFigures[k].n20)<<" | n21: "<<DoubleToString(globalFigures[k].n21);
-        // outputFile<<" | n30: "<<DoubleToString(globalFigures[k].n30)<<" | phi1: "<<DoubleToString(globalFigures[k].phi1)<<" | phi2: "<<DoubleToString(globalFigures[k].phi2);
-        // outputFile<<" | phi3: "<<DoubleToString(globalFigures[k].phi3)<<" | phi4: "<<DoubleToString(globalFigures[k].phi4)<<" | theta: "<<DoubleToString(globalFigures[k].theta);
-        // outputFile<<" | Degrees: "<<DoubleToString(globalFigures[k].theta*180 / 3.14159265);
-        // outputFile<<" | XP: "<<IntToString(globalFigures[k].xPromedio+.5)<<" | YP: "<<IntToString(globalFigures[k].yPromedio+.5)<<endl<<endl;
-
         // For training!
         //cout << DoubleToString(globalFigures[k].phi1)<<" "<<DoubleToString(globalFigures[k].phi2) << endl;
         //
@@ -1069,32 +805,7 @@ void momentos(Mat &segmentedImage)
                 ),
             Size( length/2, length/2 ), 0, 0, globalFigures[k].theta*180 / PI,
             Scalar( 0, 255, 0 ), 1, 8 );
-        // Se pone un texto mencionando el angulo en grados
-        // ostringstream textStream;
-        // textStream << "Rotated ";
-        // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5), 
-        //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
-        // textStream.str("");
-        // textStream << fixed;
-        // textStream << setprecision(1);
-        // textStream << (-1)*globalFigures[k].theta*180 / PI;
-        // textStream <<" Degrees";
-        // //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
-        // putText(segmentedImage, textStream.str(), cvPoint(globalFigures[k].xPromedio+.5,globalFigures[k].yPromedio+.5+10), 
-        //     FONT_HERSHEY_COMPLEX_SMALL, 0.50, cvScalar(255,255,255), 1, CV_AA);
-
-        /*
-            //MOMENTOS NORMALIZADOS
-    double n02;
-    double n03;
-    double n11;
-    double n12;
-    double n20;
-    double n21;
-    double n30;
-    */
     }
-    outputFile.close();
 
 }
 
@@ -1108,6 +819,7 @@ void momentos(Mat &segmentedImage)
 
 #define trainedPhisSize 4
 string trainedObjects[trainedPhisSize] = {"X", "I", "L", "R"};
+
 // ORDER -->  {PHI1_AVERAGE, PHI1_STANDARD_DEVIATION, PHI2_AVERAGE, PHI2_STANDARD_DEVIATION}
 double trainedPhis[trainedPhisSize][4] = {
     {0.3661988504, 0.0414660219, 0.0323226694, 0.0070028227}, // X
@@ -1143,6 +855,15 @@ double getMinFromList(vector<double> list) {
         smallest = min(smallest, (double)list[k]);
     }
     return smallest;
+}
+
+double getMaxFromList(vector<double> list) {
+    int k;
+    double biggest = (double)list[0];
+    for (k=1;k<list.size();k++) {
+        biggest = max(biggest, (double)list[k]);
+    }
+    return biggest;
 }
 
 string rounded(double value, int precision) {
@@ -1440,295 +1161,306 @@ void phisPlot(double multiplier, double pointSize) {
     }
     imshow("Phis (phi1, phi2)", phis);
 }
+String base="/home/vision/Desktop/";
+String filename="conobs.png";
+String window_name="Display window";
+Mat stage;
+Mat tempStage;
+Point obstacle1;
+Point obstacle2;
+Point robot;
+bool moveObstable1=false;
+bool moveObstable2=false;
+bool moveRobot=false;
+int obstacleRadius = 20;
+int robotRadius = 1;
+int maxRadius=70;
+int pointRadius=10;
+Scalar obstacleColor=Scalar(0,0,0);
+int maxValue=65535;
+Mat gota_aceite_espacio;
+Point finalPoint;
+int leftOrRight=maxRadius/2;
+int initialDir=0;
+Scalar startColor=Scalar(0,255,0);
+Scalar pathColor=Scalar(255,0,255);
+Scalar endColor=Scalar(0,0,255);
 
+int oposite(int direction) {
+    int opositeDirection=-1;
+    switch(direction) {
+        case 0:
+            opositeDirection=2;
+            break;
+        case 1:
+            opositeDirection=3;
+            break;
+        case 2:
+            opositeDirection=0;
+            break;
+        case 3:
+            opositeDirection=1;
+            break;
+    }
+    return opositeDirection;
+}
+
+void findPath(Mat &dst, Mat &src, Point start, Point end, int direction) {
+    Point current=start;
+    int currentValue;
+    currentValue = src.at<Vec3w>(current.y, current.x)[0];
+    circle(dst, start, 5, startColor, -1);
+    putText(dst, "Start Point", start, 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    vector<Point>distances; // right top left bottom
+    
+    while(currentValue) {
+        vector<double>values;
+        vector<Point>coordinates; // right top left bottom
+        int right=0;
+        int top=1;
+        int left=2;
+        int bottom=3;
+        coordinates.push_back(Point(current.x+1, current.y));
+        coordinates.push_back(Point(current.x, current.y-1));
+        coordinates.push_back(Point(current.x-1, current.y));
+        coordinates.push_back(Point(current.x, current.y+1));
+        
+        values.push_back(src.at<Vec3w>(coordinates[right].y, coordinates[right].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[top].y, coordinates[top].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[left].y, coordinates[left].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[bottom].y, coordinates[bottom].x)[0]);
+        int lower=getMinFromList(values);
+        int lowerIndex=0;
+        int pathchoices=0;
+        if (lower == values[0]) {
+            lowerIndex=0;
+            pathchoices++;
+        }
+        if (lower == values[1]) {
+            lowerIndex=1;
+            pathchoices++;
+        }
+        if (lower == values[2]) {
+            lowerIndex=2;
+            pathchoices++;
+        }
+        if (lower == values[3]) {
+            lowerIndex=3;
+            pathchoices++;
+        }
+        if (pathchoices==1)
+            direction=lowerIndex;
+
+
+
+        circle(dst, coordinates[direction], 1, pathColor, -1);
+        // if(values[direction] > currentValue) {
+        //     direction=oposite(direction);
+        // }
+        currentValue=values[direction];
+        current=coordinates[direction];
+    }
+    circle(dst, end, 5, endColor, -1);
+    putText(dst, "End Point", end, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+}
+
+void gotaDeAceite(Mat &dst, Mat &src, Point semilla) {
+    int goal=0;
+    int acum=0;
+    std::queue<Point> puntos_gota_de_aceite;
+    std::queue<int> counts;
+    puntos_gota_de_aceite.push(semilla);
+    dst.at<Vec3w>(semilla.y, semilla.x) = Vec3w(acum, acum, acum);
+    counts.push(1);
+    int count=0;
+    count+=counts.front();
+    counts.pop();
+    while (!puntos_gota_de_aceite.empty()) {
+        int children=0;
+        Point elemento=puntos_gota_de_aceite.front();
+        puntos_gota_de_aceite.pop();
+
+        Point right = Point(elemento.x+1, elemento.y);
+        Point top  = Point(elemento.x, elemento.y-1);
+        Point left  = Point(elemento.x-1, elemento.y);
+        Point bottom  = Point(elemento.x, elemento.y+1);
+        if (src.at<Vec3b>(right.y, right.x)[0] && dst.at<Vec3w>(right.y, right.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(right);
+            dst.at<Vec3w>(right.y, right.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(top.y, top.x)[0] && dst.at<Vec3w>(top.y, top.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(top);
+            dst.at<Vec3w>(top.y, top.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(left.y, left.x)[0] && dst.at<Vec3w>(left.y, left.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(left);
+            dst.at<Vec3w>(left.y, left.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(bottom.y, bottom.x)[0] && dst.at<Vec3w>(bottom.y, bottom.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(bottom);
+            dst.at<Vec3w>(bottom.y, bottom.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        counts.push(children);
+        count--;
+        if (!count) {
+            acum++;
+            while(!counts.empty()) {
+                count+=counts.front();
+                counts.pop();
+            }
+        }
+    }
+    // cout << acum << endl;
+}
+
+Point topLeft, topRight, bottomRight, bottomLeft;
+void stageSpace(Mat &image) {
+    
+    line(image, Point(topLeft.x+robotRadius, topLeft.y+2*robotRadius), Point(bottomLeft.x+robotRadius, bottomLeft.y-2*robotRadius), obstacleColor);
+    line(image, Point(topLeft.x+2*robotRadius, topLeft.y+robotRadius), Point(topRight.x-2*robotRadius, topRight.y+robotRadius), obstacleColor);
+    line(image, Point(bottomLeft.x+2*robotRadius, bottomLeft.y-robotRadius), Point(bottomRight.x-2*robotRadius, bottomRight.y-robotRadius), obstacleColor);
+    line(image, Point(topRight.x-robotRadius, topRight.y+2*robotRadius), Point(bottomRight.x-robotRadius, bottomRight.y-2*robotRadius), obstacleColor);
+
+    ellipse(image, Point(topLeft.x+2*robotRadius, topLeft.y+2*robotRadius), Size(robotRadius, robotRadius), 0, 180, 270, obstacleColor);
+    ellipse(image, Point(topRight.x-2*robotRadius, topRight.y+2*robotRadius), Size(robotRadius, robotRadius), 0, 270, 360, obstacleColor);
+    ellipse(image, Point(bottomRight.x-2*robotRadius, bottomRight.y-2*robotRadius), Size(robotRadius, robotRadius), 0, 0, 90, obstacleColor);
+    ellipse(image, Point(bottomLeft.x+2*robotRadius, bottomLeft.y-2*robotRadius), Size(robotRadius, robotRadius), 0, 90, 180, obstacleColor);
+}
+
+
+void obstacles(Mat &image) {
+    circle(image, obstacle1, obstacleRadius+robotRadius, obstacleColor, -1);
+    circle(image, obstacle2, obstacleRadius+robotRadius, obstacleColor, -1);
+}
+
+void obstaclesBorder(Mat &image) {
+    circle(image, obstacle1, obstacleRadius+robotRadius, obstacleColor, 1);
+    circle(image, obstacle2, obstacleRadius+robotRadius, obstacleColor, 1);
+}
+
+void view_refresh() {
+    tempStage.setTo(Scalar(255, 255, 255));
+    stageSpace(tempStage);
+    obstacles(tempStage);
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
+    stageSpace(stage);
+    obstaclesBorder(stage);
+}
+
+
+void on_radius_change( int, void* ){
+    view_refresh();
+    imshow( window_name, stage );
+}
+
+void on_left_right_selection( int, void* ){
+    int max=maxRadius;
+    if (leftOrRight > max/2) {
+        initialDir=0;
+
+    }
+    else {
+        initialDir=2;
+    }
+}
+
+bool insideCircle(int x, int y, Point &center, int radius) {
+    int center_x=center.x, center_y=center.y;
+    return (pow((x - center_x),2) + pow((y - center_y),2) < pow(radius,2));
+}
+
+void mouseHandler(int event, int x, int y, int flags, void *param)
+{
+    switch(event) {
+    case CV_EVENT_LBUTTONDOWN:      //left button press
+        if (insideCircle(x, y, obstacle1, obstacleRadius+robotRadius)) {
+            moveObstable1=!moveObstable1;
+            view_refresh();
+        }
+        else if (insideCircle(x, y, obstacle2, obstacleRadius+robotRadius)) {
+            moveObstable2=!moveObstable2;
+            view_refresh();
+        }
+        else if (insideCircle(x,y,robot, obstacleRadius+robotRadius)){
+            moveRobot=!moveRobot;
+            view_refresh();
+
+        }
+        else {
+            finalPoint.x=x;
+            finalPoint.y=y;
+            view_refresh();
+            gota_aceite_espacio.setTo(Vec3w(maxValue, maxValue, maxValue));
+            gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+            circle(stage, finalPoint, 5, endColor, -1);
+            putText(stage, "End Point", finalPoint, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+        }
+        imshow( window_name, stage );
+        break;
+    case CV_EVENT_RBUTTONDOWN: // right button press
+        view_refresh();
+        findPath(stage, gota_aceite_espacio, Point(x, y), finalPoint, initialDir);
+        imshow( window_name, stage );
+        break;
+    case CV_EVENT_MOUSEMOVE:
+        if (moveObstable1) {
+            obstacle1.x=x;
+            obstacle1.y=y;
+        }
+        
+        if (moveObstable2) {
+            obstacle2.x=x;
+            obstacle2.y=y;
+
+        }
+        if (moveRobot) {
+            robot.x=x;
+            robot.y=y;
+        }
+        /* draw a rectangle*/
+        break;
+
+        
+    }
+}
 
 int main(int argc,char* argv[])
 {
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
 
-    /*
-**********************************
-
-     ATENCION EQUIPO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-     La imagen binarizada se introduce en la funcion segment(ImagenBinarizada, ImagenSegmentada)
-
-     Despues la imagen segmentada se introduce en la funcion momentos(ImagenSegmentada, figures)
-
-     La funcion momentos recibe ademas como parametros un mapa, este mapa contendra los momentos de cada figura
-     
-     Este programa produce un archivo de texto llamado "figures.txt", por favor abranlo para que vean como esta estructurado todo
-
-
-
-*/
-
-
-    /* ESTE MAP CONTIENE EL ID, COLOR, Y MOMENTOS ESTADISTICOS DE CADA REGION
-
-    */
-
-    Vec3b aux(111,222,255);
-    map<unsigned int,Vec3b> idTable;
-    
-    idTable.insert(make_pair(0, aux));
-    aux.val[0]=11;
-    aux.val[1]=22;
-    aux.val[2]=33;
-
-    idTable.insert(make_pair(1, aux));
-
-    aux.val[0]=44;
-    aux.val[1]=55;
-    aux.val[2]=66;
-
-    idTable.insert(make_pair(2, aux));
-
-    aux.val[0]=77;
-    aux.val[1]=88;
-    aux.val[2]=99;
-
-    idTable.insert(make_pair(3, aux));
-
-
-    //Experimento
-    //Declaramos matriz 3 x 3
-    unsigned int matriz[2][2];
-    matriz[0][0]=2;
-    matriz[0][1]=3;
-    matriz[1][0]=4;
-    matriz[1][1]=0;
-
-    idTable[matriz[0][0]].val[1]=idTable[matriz[1][1]].val[2];
-
-    //CLEAR FILES
-    // ofstream outputLUT("LUT.txt");
-    // outputLUT.close();
-    // ofstream outputFigures("figures.txt");
-    // outputFigures.close();
-
-    VideoCapture cap(1); // open the default camera
-    if(!cap.isOpened())  // check if we succeeded
+    if(! stage.data )                              // Check for invalid input
+    {
+        cout <<  "Could not open or find the image" << std::endl ;
         return -1;
-    // establishing connection with the quadcopter
-    heli = new CHeli();
-
-    // this class holds the image from the drone 
-
-    image = new CRawImage(320,240);
-    
-    // Initial values for control   
-    pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = 0.0;
-
-    // Destination OpenCV Mat   
-    Mat currentImage = Mat(240, 320, CV_8UC3);
-    // Show it  
-    //imshow("ParrotCam", currentImage);
-
-    // Initialize joystick
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-    useJoystick = SDL_NumJoysticks() > 0;
-    if (useJoystick)
-    {
-        SDL_JoystickClose(m_joystick);
-        m_joystick = SDL_JoystickOpen(0);
-    }
-
-
-    /* ventanas puestas por default
-    // en las posiciones en pixeles
-    // (10,10) (380, 10) (700, 10) (1020, 10)
-    //         (380, 300) (700, 300) (1020, 300)
-    */
-
-    // createWindows();
-    namedWindow("Click");
-    setMouseCallback("Click", mouseCoordinatesExampleCallback);
-    moveWindow("Click", 10, 10);
-    // moveWindow("C1", 380, 300);
-    // moveWindow("C2", 700, 300);
-    // moveWindow("C3", 1020, 300);
-    // moveWindow("Controls", 1020, 10);
-    namedWindow("Phis (phi1, phi2)");
-    namedWindow("Filtered Image");
-    namedWindow("SEGMENTACION");
-    moveWindow("Phis (phi1, phi2)", 30, 300);
-    moveWindow("Filtered Image", 385, 10);
-    moveWindow("SEGMENTACION", 710, 30);
-
-    cap >> currentImage;
-
-    selectedImage = currentImage;
-    while (stop == false)
-    {
-
-        // Clear the console
-       //printf("\033[2J\033[1;1H");
-
-        if (useJoystick)
-        {
-            SDL_Event event;
-            SDL_PollEvent(&event);
-
-            joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5);
-            joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
-            joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
-            joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
-            joypadLand = SDL_JoystickGetButton(m_joystick, 2);
-            joypadHover = SDL_JoystickGetButton(m_joystick, 0);
-            joypadScan = SDL_JoystickGetButton(m_joystick, 3);
-            
-        }
-
-        Vec3b aux;
-
-        // //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        // printf("===================== Parrot Basic Example =====================\n\n");
-        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        // fprintf(stdout, "Hover   : %d \n", hover);
-        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        // fprintf(stdout, "  Land    : %d \n", joypadLand);
-        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
-
-        cap >> currentImage;
-
-        resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
-
-        //imshow("ParrotCam", currentImage);
-        currentImage.copyTo(imagenClick);
-        // put Text
-        ostringstream textStream;
-        textStream<<"X: "<<Px<<" Y: "<<Py<<" "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")";
-        //Pone texto en la Mat imageClick y el stream textStream lo pone en la posision
-        putText(imagenClick, textStream.str(), cvPoint(5,15), 
-            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-        // drawPolygonWithPoints();
-
-        if (points.size()) circle(imagenClick, (Point)points[points.size() -1], 5, Scalar(0,0,255), CV_FILLED);
-        imshow("Click", imagenClick);
-
-        // Histogram
-        // histograms();
-
-        //BGR to YIQ
-        Mat yiqOurImage; bgr2yiq(currentImage, yiqOurImage);
-
-        // imshow("YIQ1", yiqOurImage);
-
-        //BGR to HSV
-        Mat hsv;// cvtColor(currentImage, hsv, CV_BGR2HSV);
-        // imshow("HSV", hsv);
-
-        switch(selected) {
-            case 1: selectedImage = currentImage; canales="RGB"; break;
-            case 2: selectedImage = yiqOurImage; canales="YIQ"; break;
-            case 3: selectedImage = hsv; canales="HSV"; break;
-        }
-
-        // Blur image
-        blur(selectedImage,selectedImage,Size(3,3)); 
-        // Filter image
-        Mat filteredImage; filterColorFromImage(selectedImage, filteredImage);
-        imshow("Filtered Image", filteredImage);
-        //segment(filteredImage,segmentedImg);
-        //momentos(segmentedImg);
-        //imshow("SEGMENTACION",segmentedImg);
-        //classification();
-        // draw phis
-        // phisPlot(multiplier, pointSize)
-        // screen size ratio relative to window size
-        // size of points representing objects
-        //phisPlot(2, 2);
-        // take decision
-        //decision();
-
-        char key = waitKey(5);
-        switch (key) {
-            case 'a': yaw = -20000.0; break;
-            case 'd': yaw = 20000.0; break;
-            case 'w': height = -20000.0; break;
-            case 's': height = 20000.0; break;
-            case 'q': heli->takeoff(); break;
-            case 'e': heli->land(); break;
-            case 'z': giraIzq(); break;
-            case 'x': giraDer(); break;
-            case 'c': avanza(); break;
-            case 'v': retrocede(); break;
-            case 'j': roll = -20000.0; break;
-            case 'l': roll = 20000.0; break;
-            case 'i': sube(); break;
-            case 'k': baja(); break;
-            case 'h': hover = (hover + 1) % 2; break;
-            case 'b': 
-                segment(filteredImage,segmentedImg);
-                momentos(segmentedImg);
-                imshow("SEGMENTACION",segmentedImg);
-                classification();
-                phisPlot(2,2);
-                decision();
-            break;
-
-            case '1': selected=1; break;
-            case '2': selected=2; break;
-            case '3': selected=3; break;
-
-            case 27: stop = true; break;
-            default: pitch = roll = yaw = height = 0.0;
-        }
- 
-        if (joypadTakeOff) {
-            heli->takeoff();
-        }
-        if (joypadLand) {
-            heli->land();
-        }
-
-        if (joypadScan){
-            segment(filteredImage,segmentedImg);
-            momentos(segmentedImg);
-            imshow("SEGMENTACION",segmentedImg);
-            classification();
-            phisPlot(2,2);
-        }
-
-        hover = joypadHover ? 1 : 0;
-
-        //setting the drone angles
-        if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
-        {
-            heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
-            navigatedWithJoystick = true;
-        }
-        else
-        {
-            heli->setAngles(pitch, roll, yaw, height, hover);
-            navigatedWithJoystick = false;
-        }
-    
-        // image is captured
-        //heli->renewImage(image);
-
-        // // Copy to OpenCV Mat
-        //rawToMat(currentImage, image);
-        
-
-        usleep(15000);
     }
     
-    heli->land();
-    SDL_JoystickClose(m_joystick);
-    delete heli;
-    delete image;
+    topLeft=Point(0, 40);
+    topRight=Point(stage.cols, 40);
+    bottomRight=Point(stage.cols, stage.rows);
+    bottomLeft=Point(0, stage.rows);
+
+    namedWindow( window_name, WINDOW_AUTOSIZE );// Create a window for display.
+    createTrackbar( "Robot Radius", window_name, &robotRadius, maxRadius, on_radius_change );
+    createTrackbar( "Left Or Right", window_name, &leftOrRight, maxRadius, on_left_right_selection );
+    setMouseCallback( window_name, mouseHandler);
+    // x = stage.cols / 2
+    obstacle1=Point(362,280);
+    obstacle2=Point(362,538);
+    finalPoint=Point(stage.cols/2, stage.rows/2);
+    // robot=Point(50,50);
+    // circle(stage, robot, robotRadius, Scalar(255,0,0), -1);
+    tempStage = Mat(stage.rows, stage.cols, CV_8UC3, Scalar(255, 255, 255));
+    gota_aceite_espacio=Mat(stage.rows, stage.cols, CV_16UC3, Scalar(maxValue, maxValue, maxValue));
+    view_refresh();
+    gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+    imshow( window_name, stage );   
+    waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
 }
