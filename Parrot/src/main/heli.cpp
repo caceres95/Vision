@@ -1161,8 +1161,8 @@ void phisPlot(double multiplier, double pointSize) {
     }
     imshow("Phis (phi1, phi2)", phis);
 }
-String base="/home/vision/Desktop/";
-String filename="conobs.png";
+String base="/media/caceres95/C43A73F53A73E33A/Users/Carlos/Dropbox/Carrera/8vo Semestre/Vision para Robots/Lab/Vision/Parrot/src/";
+String filename="obstaculos.png";
 String window_name="Display window";
 Mat stage;
 Mat tempStage;
