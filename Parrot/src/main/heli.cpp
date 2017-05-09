@@ -140,7 +140,11 @@ Mat frozenImageHSV;
 Mat binarizedImage;
 Mat segmentedImg;
 
-
+//Variables decision
+string actLargo = "";
+string actCorto = "";
+double angulo = 0;
+bool vuela = FALSE;
 
 Mat selectedImage;
 int selected = 2;
@@ -1204,26 +1208,26 @@ void classification() {
 void decision() {
     if(let1 != "" && let2 != "")
     {
-        bool largo = FALSE;
-        bool corto = FALSE;
-
-        string actLargo = "";
-        double angulo = 0;
-
-        if(let1 == "I" || let2 == "L")
+        cout << "Se detectaron 2 letras" << endl << endl;
+        if(let1 == "I" || let1 == "L" || let2 == "I" || let2 == "L")
         {
-            if(let1 == "X" || let2 == "R")
+            cout << "Se detecto letra larga" << endl << endl;
+            if(let1 == "X" || let1 == "R" || let2 == "X" || let2 == "R")
             {
+                cout << "Se detecto letra corta" << endl << endl;
+                vuela = TRUE;
                 //Accion de letra larga
                 if(let1 == "I" || let1 == "L")
                 {
                     angulo = ang[0];
                     if(let1 == "I")
                     {
+                        cout << "Se identifico letra I" << endl << endl;
                         actLargo = "IZQUIERDA";
                     }
                     else
                     {
+                        cout << "Se identifico letra L" << endl << endl;
                         actLargo = "DERECHA";
                     }
                 }
@@ -1232,10 +1236,12 @@ void decision() {
                     angulo = ang[1];
                     if(let2 == "I")
                     {
+                        cout << "Se identifico letra I" << endl << endl;
                         actLargo = "IZQUIERDA";
                     }
                     else
                     {
+                        cout << "Se identifico letra L" << endl << endl;
                         actLargo = "DERECHA";
                     }
                 }
@@ -1245,35 +1251,71 @@ void decision() {
                 {
                     if(let1 == "X")
                     {
-                        actLargo = "LARGO";
+                        cout << "Se identifico letra X" << endl << endl;
+                        actCorto = "LARGO";
                     }
                     else
                     {
-                        actLargo = "MEDIO";
+                        cout << "Se identifico letra R" << endl << endl;
+                        actCorto = "MEDIO";
                     }
                 }
                 else if(let2 == "X" || let2 == "R")
                 {
                     if(let2 == "X")
                     {
-                        actLargo = "LARGO";
+                        cout << "Se identifico letra X" << endl << endl;
+                        actCorto = "LARGO";
                     }
                     else
                     {
-                        actLargo = "MEDIO";
+                        cout << "Se identifico letra R" << endl << endl;
+                        actCorto = "MEDIO";
                     }
                 }
             }
         }
-
-        cout << "Figura 1: " << let1 << "\t Angulo: " << ang[0] << endl;
-        cout << "Figura 2: " << let2 << "\t Angulo: " << ang[1] << endl;
     }
     else
     {
         cout << "The pair of letters was not detected" << endl;
     }
     
+}
+
+void planVuelo()
+{
+    //cout << actLargo << endl;
+    if(actLargo == "IZQUIERDA")
+    {
+        cout << "Vuela izquierda ";
+        if(actCorto == "LARGO")
+        {
+            cout << "largo" << endl << endl;
+        }
+        else if(actCorto == "MEDIO")
+        {
+            cout << "medio" << endl << endl;
+        }
+    }
+
+    else if(actLargo == "DERECHA")
+    {   
+        cout << "Vuela derecha ";
+        if(actCorto == "LARGO")
+        {
+            cout << "largo" << endl << endl;
+        }
+        else if(actCorto == "MEDIO")
+        {
+            cout << "medio" << endl << endl;
+        }
+            
+    }
+    else
+        cout << "Falle :(";
+
+    vuela = FALSE;
 }
 
 void createWindows() {
@@ -1720,6 +1762,11 @@ int main(int argc,char* argv[])
                 classification();
                 phisPlot(2,2);
                 decision();
+                if(vuela)
+                {
+                    cout << "Entra a plan de vuelo" << endl << endl;
+                    planVuelo();
+                }
             break;
 
             case '1': selected=1; break;
