@@ -1591,9 +1591,9 @@ int main(int argc,char* argv[])
     // ofstream outputFigures("figures.txt");
     // outputFigures.close();
 
-    VideoCapture cap(1); // open the default camera
-    if(!cap.isOpened())  // check if we succeeded
-        return -1;
+    //VideoCapture cap(1); // open the default camera
+    //if(!cap.isOpened())  // check if we succeeded
+    //    return -1;
     // establishing connection with the quadcopter
     heli = new CHeli();
 
@@ -1641,7 +1641,7 @@ int main(int argc,char* argv[])
     moveWindow("Filtered Image", 385, 10);
     moveWindow("SEGMENTACION", 710, 30);
 
-    cap >> currentImage;
+    //cap >> currentImage;
 
     selectedImage = currentImage;
     while (stop == false)
@@ -1686,11 +1686,11 @@ int main(int argc,char* argv[])
         // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
         // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
-        cap >> currentImage;
+        //cap >> currentImage;
 
         resize(currentImage, currentImage, Size(320, 240), 0, 0, cv::INTER_CUBIC);
 
-        //imshow("ParrotCam", currentImage);
+        imshow("ParrotCam", currentImage);
         currentImage.copyTo(imagenClick);
         // put Text
         ostringstream textStream;
@@ -1807,10 +1807,10 @@ int main(int argc,char* argv[])
         }
     
         // image is captured
-        //heli->renewImage(image);
+        heli->renewImage(image);
 
         // // Copy to OpenCV Mat
-        //rawToMat(currentImage, image);
+        rawToMat(currentImage, image);
         
 
         usleep(15000);
