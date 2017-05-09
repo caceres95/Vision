@@ -1206,20 +1206,63 @@ void decision() {
     {
         bool largo = FALSE;
         bool corto = FALSE;
+
+        string actLargo = "";
         double angulo = 0;
 
         if(let1 == "I" || let2 == "L")
         {
-            largo = TRUE;
-
-            if(let1 == "I" || let1 == "L")
+            if(let1 == "X" || let2 == "R")
             {
-                angulo = ang[0];
-            }
+                //Accion de letra larga
+                if(let1 == "I" || let1 == "L")
+                {
+                    angulo = ang[0];
+                    if(let1 == "I")
+                    {
+                        actLargo = "IZQUIERDA";
+                    }
+                    else
+                    {
+                        actLargo = "DERECHA";
+                    }
+                }
+                else if(let2 == "I" || let2 == "L")
+                {
+                    angulo = ang[1];
+                    if(let2 == "I")
+                    {
+                        actLargo = "IZQUIERDA";
+                    }
+                    else
+                    {
+                        actLargo = "DERECHA";
+                    }
+                }
 
-            else if(let2 == "I" || let2 == "L")
-            {
-                angulo = ang[1];
+                //Accion de letra corta
+                if(let1 == "X" || let1 == "R")
+                {
+                    if(let1 == "X")
+                    {
+                        actLargo = "LARGO";
+                    }
+                    else
+                    {
+                        actLargo = "MEDIO";
+                    }
+                }
+                else if(let2 == "X" || let2 == "R")
+                {
+                    if(let2 == "X")
+                    {
+                        actLargo = "LARGO";
+                    }
+                    else
+                    {
+                        actLargo = "MEDIO";
+                    }
+                }
             }
         }
 
