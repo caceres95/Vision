@@ -1049,7 +1049,8 @@ void phisPlot(double multiplier, double pointSize) {
     }
     imshow("Phis (phi1, phi2)", phis);
 }
-String base="/home/vision/Desktop/";
+String base="/home/alex/Desktop/";
+String filename="mapa.png";
 String window_name="Display window";
 Mat stage;
 Point obstacle1;
@@ -1084,7 +1085,7 @@ void obstacles() {
 }
 
 void refresh() {
-    stage = imread(base+"sinobs.png", CV_LOAD_IMAGE_COLOR);
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);
     stageSpace();
     obstacles();
     // circle(stage, robot, robotRadius, Scalar(255,0,0), -1);
@@ -1140,7 +1141,7 @@ void mouseHandler(int event, int x, int y, int flags, void *param)
 
 int main(int argc,char* argv[])
 {
-    stage = imread(base+"sinobs.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! stage.data )                              // Check for invalid input
     {
