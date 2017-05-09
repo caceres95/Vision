@@ -124,6 +124,12 @@ int Py;
 int vC1=85, vC2=115, vC3=152;
 int thresh1=22, thresh2=20, thresh3=36;
 
+//Variables globales de figuras
+double ang[2];
+string let1 = "";
+string let2 = "";
+
+
 Mat imagenClick;
 
 //Variable donde se almacenara la imagen congelada
@@ -1179,13 +1185,52 @@ void classification() {
             distances.push_back(getDistance(phi1, phi2, trainedPhis[index][0], trainedPhis[index][2]));
         }
         globalFigures[k].whatitis=itsNameIs(phi1, phi2, distances);
+        if(k == 0)
+        {
+            let1 = globalFigures[k].whatitis;    
+        }
+        else 
+        {
+            let2 = globalFigures[k].whatitis;    
+        }
+
+        ang[k]= globalFigures[k].theta * 180/PI;
         // guardar whatitis   ----->  globalFigures[k].whatitis
         // guardar theta ---------> globalFigures[k].theta
     }
 }
 
+//AQUI ME QUEDEEEEEEEEEEEEEEEE_ continue
 void decision() {
+    if(let1 != "" && let2 != "")
+    {
+        bool largo = FALSE;
+        bool corto = FALSE;
+        double angulo = 0;
 
+        if(let1 == "I" || let2 == "L")
+        {
+            largo = TRUE;
+
+            if(let1 == "I" || let1 == "L")
+            {
+                angulo = ang[0];
+            }
+
+            else if(let2 == "I" || let2 == "L")
+            {
+                angulo = ang[1];
+            }
+        }
+
+        cout << "Figura 1: " << let1 << "\t Angulo: " << ang[0] << endl;
+        cout << "Figura 2: " << let2 << "\t Angulo: " << ang[1] << endl;
+    }
+    else
+    {
+        cout << "The pair of letters was not detected" << endl;
+    }
+    
 }
 
 void createWindows() {
@@ -1518,7 +1563,7 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-       printf("\033[2J\033[1;1H");
+       //printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -1538,23 +1583,23 @@ int main(int argc,char* argv[])
 
         Vec3b aux;
 
-        //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        printf("===================== Parrot Basic Example =====================\n\n");
-        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        fprintf(stdout, "Hover   : %d \n", hover);
-        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        fprintf(stdout, "  Land    : %d \n", joypadLand);
-        fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
+        // //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        // printf("===================== Parrot Basic Example =====================\n\n");
+        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
+        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        // fprintf(stdout, "Hover   : %d \n", hover);
+        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+        // fprintf(stdout, "  Land    : %d \n", joypadLand);
+        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
+        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         cap >> currentImage;
 
@@ -1631,7 +1676,7 @@ int main(int argc,char* argv[])
                 imshow("SEGMENTACION",segmentedImg);
                 classification();
                 phisPlot(2,2);
-                //decision();
+                decision();
             break;
 
             case '1': selected=1; break;
