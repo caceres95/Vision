@@ -29,6 +29,7 @@ using namespace std;
 using namespace cv;
 
 #include <sstream>
+#include <queue>
 
 #define PI 3.14159265
 
@@ -1526,6 +1527,276 @@ void phisPlot(double multiplier, double pointSize) {
     imshow("Phis (phi1, phi2)", phis);
 }
 
+String base="/media/caceres95/C43A73F53A73E33A/Users/Carlos/Dropbox/Carrera/8vo Semestre/Vision para Robots/Lab/Vision/Parrot/src/";
+String filename="obstaculos.png";
+String window_name="Display window";
+Mat stage;
+Mat tempStage;
+Point obstacle1;
+Point obstacle2;
+Point robot;
+bool moveObstable1=false;
+bool moveObstable2=false;
+bool moveRobot=false;
+int obstacleRadius = 20;
+int robotRadius = 1;
+int maxRadius=70;
+int pointRadius=10;
+Scalar obstacleColor=Scalar(0,0,0);
+int maxValue=65535;
+Mat gota_aceite_espacio;
+Point finalPoint;
+int leftOrRight=maxRadius/2;
+int initialDir=0;
+Scalar startColor=Scalar(0,255,0);
+Scalar pathColor=Scalar(255,0,255);
+Scalar endColor=Scalar(0,0,255);
+
+int oposite(int direction) {
+    int opositeDirection=-1;
+    switch(direction) {
+        case 0:
+            opositeDirection=2;
+            break;
+        case 1:
+            opositeDirection=3;
+            break;
+        case 2:
+            opositeDirection=0;
+            break;
+        case 3:
+            opositeDirection=1;
+            break;
+    }
+    return opositeDirection;
+}
+
+void findPath(Mat &dst, Mat &src, Point start, Point end, int direction) {
+    Point current=start;
+    int currentValue;
+    currentValue = src.at<Vec3w>(current.y, current.x)[0];
+    circle(dst, start, 5, startColor, -1);
+    putText(dst, "Start Point", start, 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    vector<Point>distances; // right top left bottom
+    
+    while(currentValue) {
+        vector<double>values;
+        vector<Point>coordinates; // right top left bottom
+        int right=0;
+        int top=1;
+        int left=2;
+        int bottom=3;
+        coordinates.push_back(Point(current.x+1, current.y));
+        coordinates.push_back(Point(current.x, current.y-1));
+        coordinates.push_back(Point(current.x-1, current.y));
+        coordinates.push_back(Point(current.x, current.y+1));
+        
+        values.push_back(src.at<Vec3w>(coordinates[right].y, coordinates[right].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[top].y, coordinates[top].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[left].y, coordinates[left].x)[0]);
+        values.push_back(src.at<Vec3w>(coordinates[bottom].y, coordinates[bottom].x)[0]);
+        int lower=getMinFromList(values);
+        int lowerIndex=0;
+        int pathchoices=0;
+        if (lower == values[0]) {
+            lowerIndex=0;
+            pathchoices++;
+        }
+        if (lower == values[1]) {
+            lowerIndex=1;
+            pathchoices++;
+        }
+        if (lower == values[2]) {
+            lowerIndex=2;
+            pathchoices++;
+        }
+        if (lower == values[3]) {
+            lowerIndex=3;
+            pathchoices++;
+        }
+        if (pathchoices==1)
+            direction=lowerIndex;
+
+
+
+        circle(dst, coordinates[direction], 1, pathColor, -1);
+        // if(values[direction] > currentValue) {
+        //     direction=oposite(direction);
+        // }
+        currentValue=values[direction];
+        current=coordinates[direction];
+    }
+    circle(dst, end, 5, endColor, -1);
+    putText(dst, "End Point", end, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+}
+
+void gotaDeAceite(Mat &dst, Mat &src, Point semilla) {
+    int goal=0;
+    int acum=0;
+    std::queue<Point> puntos_gota_de_aceite;
+    std::queue<int> counts;
+    puntos_gota_de_aceite.push(semilla);
+    dst.at<Vec3w>(semilla.y, semilla.x) = Vec3w(acum, acum, acum);
+    counts.push(1);
+    int count=0;
+    count+=counts.front();
+    counts.pop();
+    while (!puntos_gota_de_aceite.empty()) {
+        int children=0;
+        Point elemento=puntos_gota_de_aceite.front();
+        puntos_gota_de_aceite.pop();
+
+        Point right = Point(elemento.x+1, elemento.y);
+        Point top  = Point(elemento.x, elemento.y-1);
+        Point left  = Point(elemento.x-1, elemento.y);
+        Point bottom  = Point(elemento.x, elemento.y+1);
+        if (src.at<Vec3b>(right.y, right.x)[0] && dst.at<Vec3w>(right.y, right.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(right);
+            dst.at<Vec3w>(right.y, right.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(top.y, top.x)[0] && dst.at<Vec3w>(top.y, top.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(top);
+            dst.at<Vec3w>(top.y, top.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(left.y, left.x)[0] && dst.at<Vec3w>(left.y, left.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(left);
+            dst.at<Vec3w>(left.y, left.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        if (src.at<Vec3b>(bottom.y, bottom.x)[0] && dst.at<Vec3w>(bottom.y, bottom.x)[0] == maxValue){
+            puntos_gota_de_aceite.push(bottom);
+            dst.at<Vec3w>(bottom.y, bottom.x) = Vec3w(acum+1, acum+1, acum+1);
+            children++;
+        }
+        counts.push(children);
+        count--;
+        if (!count) {
+            acum++;
+            while(!counts.empty()) {
+                count+=counts.front();
+                counts.pop();
+            }
+        }
+    }
+    // cout << acum << endl;
+}
+
+Point topLeft, topRight, bottomRight, bottomLeft;
+void stageSpace(Mat &image) {
+    
+    line(image, Point(topLeft.x+robotRadius, topLeft.y+2*robotRadius), Point(bottomLeft.x+robotRadius, bottomLeft.y-2*robotRadius), obstacleColor);
+    line(image, Point(topLeft.x+2*robotRadius, topLeft.y+robotRadius), Point(topRight.x-2*robotRadius, topRight.y+robotRadius), obstacleColor);
+    line(image, Point(bottomLeft.x+2*robotRadius, bottomLeft.y-robotRadius), Point(bottomRight.x-2*robotRadius, bottomRight.y-robotRadius), obstacleColor);
+    line(image, Point(topRight.x-robotRadius, topRight.y+2*robotRadius), Point(bottomRight.x-robotRadius, bottomRight.y-2*robotRadius), obstacleColor);
+
+    ellipse(image, Point(topLeft.x+2*robotRadius, topLeft.y+2*robotRadius), Size(robotRadius, robotRadius), 0, 180, 270, obstacleColor);
+    ellipse(image, Point(topRight.x-2*robotRadius, topRight.y+2*robotRadius), Size(robotRadius, robotRadius), 0, 270, 360, obstacleColor);
+    ellipse(image, Point(bottomRight.x-2*robotRadius, bottomRight.y-2*robotRadius), Size(robotRadius, robotRadius), 0, 0, 90, obstacleColor);
+    ellipse(image, Point(bottomLeft.x+2*robotRadius, bottomLeft.y-2*robotRadius), Size(robotRadius, robotRadius), 0, 90, 180, obstacleColor);
+}
+
+
+void obstacles(Mat &image) {
+    circle(image, obstacle1, obstacleRadius+robotRadius, obstacleColor, -1);
+    circle(image, obstacle2, obstacleRadius+robotRadius, obstacleColor, -1);
+}
+
+void obstaclesBorder(Mat &image) {
+    circle(image, obstacle1, obstacleRadius+robotRadius, obstacleColor, 1);
+    circle(image, obstacle2, obstacleRadius+robotRadius, obstacleColor, 1);
+}
+
+void view_refresh() {
+    tempStage.setTo(Scalar(255, 255, 255));
+    stageSpace(tempStage);
+    obstacles(tempStage);
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
+    stageSpace(stage);
+    obstaclesBorder(stage);
+}
+
+
+void on_radius_change( int, void* ){
+    view_refresh();
+    imshow( window_name, stage );
+}
+
+void on_left_right_selection( int, void* ){
+    int max=maxRadius;
+    if (leftOrRight > max/2) {
+        initialDir=0;
+
+    }
+    else {
+        initialDir=2;
+    }
+}
+
+bool insideCircle(int x, int y, Point &center, int radius) {
+    int center_x=center.x, center_y=center.y;
+    return (pow((x - center_x),2) + pow((y - center_y),2) < pow(radius,2));
+}
+
+void mouseHandler(int event, int x, int y, int flags, void *param)
+{
+    switch(event) {
+    case CV_EVENT_LBUTTONDOWN:      //left button press
+        if (insideCircle(x, y, obstacle1, obstacleRadius+robotRadius)) {
+            moveObstable1=!moveObstable1;
+            view_refresh();
+        }
+        else if (insideCircle(x, y, obstacle2, obstacleRadius+robotRadius)) {
+            moveObstable2=!moveObstable2;
+            view_refresh();
+        }
+        else if (insideCircle(x,y,robot, obstacleRadius+robotRadius)){
+            moveRobot=!moveRobot;
+            view_refresh();
+
+        }
+        else {
+            finalPoint.x=x;
+            finalPoint.y=y;
+            view_refresh();
+            gota_aceite_espacio.setTo(Vec3w(maxValue, maxValue, maxValue));
+            gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+            circle(stage, finalPoint, 5, endColor, -1);
+            putText(stage, "End Point", finalPoint, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+        }
+        imshow( window_name, stage );
+        break;
+    case CV_EVENT_RBUTTONDOWN: // right button press
+        view_refresh();
+        findPath(stage, gota_aceite_espacio, Point(x, y), finalPoint, initialDir);
+        imshow( window_name, stage );
+        break;
+    case CV_EVENT_MOUSEMOVE:
+        if (moveObstable1) {
+            obstacle1.x=x;
+            obstacle1.y=y;
+        }
+        
+        if (moveObstable2) {
+            obstacle2.x=x;
+            obstacle2.y=y;
+
+        }
+        if (moveRobot) {
+            robot.x=x;
+            robot.y=y;
+        }
+        /* draw a rectangle*/
+        break;
+
+        
+    }
+}
+
 
 int main(int argc,char* argv[])
 {
@@ -1640,6 +1911,35 @@ int main(int argc,char* argv[])
     moveWindow("Phis (phi1, phi2)", 30, 300);
     moveWindow("Filtered Image", 385, 10);
     moveWindow("SEGMENTACION", 710, 30);
+
+    stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
+
+    if(! stage.data )                              // Check for invalid input
+    {
+        cout <<  "Could not open or find the image" << std::endl ;
+        return -1;
+    }
+    
+    topLeft=Point(0, 40);
+    topRight=Point(stage.cols, 40);
+    bottomRight=Point(stage.cols, stage.rows);
+    bottomLeft=Point(0, stage.rows);
+
+    namedWindow( window_name, WINDOW_AUTOSIZE );// Create a window for display.
+    createTrackbar( "Robot Radius", window_name, &robotRadius, maxRadius, on_radius_change );
+    createTrackbar( "Left Or Right", window_name, &leftOrRight, maxRadius, on_left_right_selection );
+    setMouseCallback( window_name, mouseHandler);
+    // x = stage.cols / 2
+    obstacle1=Point(356,276);
+    obstacle2=Point(356,536);
+    finalPoint=Point(stage.cols/2, stage.rows/2);
+    // robot=Point(50,50);
+    // circle(stage, robot, robotRadius, Scalar(255,0,0), -1);
+    tempStage = Mat(stage.rows, stage.cols, CV_8UC3, Scalar(255, 255, 255));
+    gota_aceite_espacio=Mat(stage.rows, stage.cols, CV_16UC3, Scalar(maxValue, maxValue, maxValue));
+    view_refresh();
+    gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+    imshow( window_name, stage );   
 
     cap >> currentImage;
 
