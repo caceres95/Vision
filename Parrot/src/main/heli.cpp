@@ -117,7 +117,7 @@ int hover=0;
 // Joystick related
 SDL_Joystick* m_joystick;
 bool useJoystick;
-int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYawLeft, joypadYawRight, joypadYaw;
+int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYawLeft, joypadYawRight, joypadYaw, joypadRollLeft, joypadRollRight;
 
 // for measuring commands and time
 int joypadRollPrev=0, joypadPitchPrev=0, joypadVerticalSpeedPrev=0, joypadYawPrev=0, hoverPrev=0;
@@ -125,12 +125,15 @@ clock_t startTime=0;
 clock_t ellapsedTime = 0;
 
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
+
+//Variables para 
 bool triangulo = FALSE;
+bool running = FALSE;
 
 
 int Px;
 int Py;
-int vC1=85, vC2=115, vC3=152;
+int vC1=80, vC2=109, vC3=106;
 int thresh1=22, thresh2=20, thresh3=36;
 
 //Variables globales de figuras
@@ -1695,7 +1698,7 @@ void mouseHandler(int event, int x, int y, int flags, void *param)
 
 //AQUI ME QUEDEEEEEEEEEEEEEEEE_ continue
 void decision() {
-    if(let1 != "" && let2 != "")
+    if(let1 != "Unknown" && let2 != "Unknown")
     {
         cout << "Se detectaron 2 letras" << endl << endl;
         if(let1 == "I" || let1 == "L" || let2 == "I" || let2 == "L")
@@ -1763,13 +1766,31 @@ void decision() {
                     }
                 }
             }
+            else
+            {
+                running = FALSE;
+            }
         }
     }
     else
     {
         cout << "The pair of letters was not detected" << endl;
+        running = FALSE;
     }
     
+}
+
+void finish()
+{
+    // tempStage.setTo(Scalar(255, 255, 255));
+    // stageSpace(tempStage);
+    // obstacles(tempStage);
+    gotaDeAceite(gota_aceite_espacio, tempStage, finalPoint);
+    circle(stage, finalPoint, 5, endColor, -1);
+    putText(stage, "End Point", finalPoint, 
+        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
+    imshow( window_name, stage );
 }
 
 void planVuelo()
@@ -1786,14 +1807,30 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=670;
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            finish();
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            if(angulo < 0)
+            {
+                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+                usleep(500000);
+            }
+            else
+            {
+                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+                usleep(500000);
+            }
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1700000);
+
+            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            usleep(3000000);
+
+            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            usleep(1900000);
+
+            heli->land();
 
         }
         else if(actCorto == "MEDIO")
@@ -1802,14 +1839,30 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=405;
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            finish();
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            if(angulo < 0)
+            {
+                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+                usleep(500000);
+            }
+            else
+            {
+                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+                usleep(500000);
+            }
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1800000);
+
+            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            usleep(1800000);
+
+            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            usleep(1700000);
+
+            heli->land();
         }
     }
 
@@ -1824,14 +1877,30 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=670;
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            finish();
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            if(angulo < 0)
+            {
+                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+                usleep(500000);
+            }
+            else
+            {
+                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+                usleep(500000);
+            }
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            usleep(1700000);
+
+            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            usleep(3000000);
+
+            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1900000);
+
+            heli->land();
         }
         else if(actCorto == "MEDIO")
         {
@@ -1839,26 +1908,36 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=405;
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            finish();
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            if(angulo < 0)
+            {
+                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+                usleep(500000);
+            }
+            else
+            {
+                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+                usleep(500000);
+            }
 
-            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
-            //usleep(500000);
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            usleep(1800000);
+
+            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            usleep(1800000);
+
+            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1700000);
+
+            heli->land();
         }
             
     }
     else
         cout << "Falle :(";
 
-    gotaDeAceite(gota_aceite_espacio, tempStage, finalPoint);
-    circle(stage, finalPoint, 5, endColor, -1);
-    putText(stage, "End Point", finalPoint, 
-        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-    findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
-    imshow( window_name, stage );
     vuela = FALSE;
 }
 
@@ -1939,8 +2018,8 @@ int main(int argc,char* argv[])
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = joypadYawRight =joypadYawLeft = 0;
-
+    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = joypadYawRight =joypadYawLeft 
+    = joypadRollLeft = joypadRollRight = 0;
 
 
     // Destination OpenCV Mat   
@@ -1968,16 +2047,21 @@ int main(int argc,char* argv[])
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
     moveWindow("Click", 10, 10);
+
+    
+
     // moveWindow("C1", 380, 300);
     // moveWindow("C2", 700, 300);
     // moveWindow("C3", 1020, 300);
     // moveWindow("Controls", 1020, 10);
+    namedWindow("Display window");
     namedWindow("Phis (phi1, phi2)");
     namedWindow("Filtered Image");
     namedWindow("SEGMENTACION");
     moveWindow("Phis (phi1, phi2)", 30, 300);
     moveWindow("Filtered Image", 385, 10);
-    moveWindow("SEGMENTACION", 710, 30);
+    moveWindow("SEGMENTACION", 385, 300);
+    moveWindow("Display window", 710, 10);
 
     stage = imread(base+filename, CV_LOAD_IMAGE_COLOR);   // Read the file
 
@@ -2026,9 +2110,43 @@ int main(int argc,char* argv[])
             SDL_Event event;
             SDL_PollEvent(&event);
 
-            joypadRoll = SDL_JoystickGetAxis(m_joystick, 2)/8;
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5)/8;
+            //Con joystick
+            //joypadRoll = SDL_JoystickGetAxis(m_joystick, 2)/10;
+            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5)/10;
+            if(joypadPitch < 0)
+            {
+                joypadPitch = -3276;
+            }
+            else if(joypadPitch > 0)
+            {
+                joypadPitch = 3276;
+            }
+
+            joypadRollLeft = SDL_JoystickGetButton(m_joystick, 4);
+            joypadRollRight = SDL_JoystickGetButton(m_joystick, 5);
+
+            if(!joypadRollLeft && !joypadRollRight)
+            {
+                joypadRoll = 0;
+            }
+            else if(joypadRollLeft)
+            {
+                joypadRoll = -3276;
+            }
+            else if(joypadRollRight)       
+            {
+                joypadRoll = 3276;
+            }
+
             joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1)/4;
+            if(joypadVerticalSpeed < 0)
+            {
+                joypadVerticalSpeed = -8192;
+            }
+            else if(joypadVerticalSpeed > 0)
+            {
+                joypadVerticalSpeed = 8192;
+            }
 
             joypadYawRight = SDL_JoystickGetAxis(m_joystick, 4)+32768; /*La velocidad del angulo no es un problema tan grave*/
             joypadYawLeft = SDL_JoystickGetAxis(m_joystick, 3)+32768;
@@ -2162,17 +2280,20 @@ int main(int argc,char* argv[])
         }
 
         if (joypadScan){
-            triangulo = TRUE;
-            segment(filteredImage,segmentedImg);
-            momentos(segmentedImg);
-            imshow("SEGMENTACION",segmentedImg);
-            classification();
-            phisPlot(2,2);
-            decision();
-            if(vuela)
+            if(!running)
             {
-                cout << "Entra a plan de vuelo" << endl << endl;
-                planVuelo();
+                running = TRUE;
+                segment(filteredImage,segmentedImg);
+                momentos(segmentedImg);
+                imshow("SEGMENTACION",segmentedImg);
+                classification();
+                phisPlot(2,2);
+                decision();
+                if(vuela)
+                {
+                    cout << "Entra a plan de vuelo" << endl << endl;
+                    planVuelo();
+                }
             }
         }
 
@@ -2181,26 +2302,26 @@ int main(int argc,char* argv[])
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            if(triangulo)
-            {
-                if (
-                    joypadPitch != joypadPitchPrev ||
-                    joypadRoll != joypadRollPrev ||
-                    joypadYaw != joypadYawPrev ||
-                    joypadVerticalSpeed != joypadVerticalSpeedPrev ||
-                    hover != hoverPrev
-                    ) 
-                {
-                    ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
-                    cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
-                    joypadPitchPrev = joypadPitch;
-                    joypadRollPrev = joypadRoll;
-                    joypadYawPrev = joypadYaw;
-                    joypadVerticalSpeedPrev = joypadVerticalSpeed;
-                    hoverPrev = hover;
-                    startTime = clock ();
-                }   
-            }
+            // if(triangulo)
+            // {
+            //     if (
+            //         joypadPitch != joypadPitchPrev ||
+            //         joypadRoll != joypadRollPrev ||
+            //         joypadYaw != joypadYawPrev ||
+            //         joypadVerticalSpeed != joypadVerticalSpeedPrev ||
+            //         hover != hoverPrev
+            //         ) 
+            //     {
+            //         ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
+            //         cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
+            //         joypadPitchPrev = joypadPitch;
+            //         joypadRollPrev = joypadRoll;
+            //         joypadYawPrev = joypadYaw;
+            //         joypadVerticalSpeedPrev = joypadVerticalSpeed;
+            //         hoverPrev = hover;
+            //         startTime = clock ();
+            //     }   
+            // }
             
 
             heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
