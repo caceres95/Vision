@@ -117,8 +117,15 @@ int hover=0;
 // Joystick related
 SDL_Joystick* m_joystick;
 bool useJoystick;
-int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYaw;
+int joypadRoll, joypadPitch, joypadVerticalSpeed, joypadYawLeft, joypadYawRight, joypadYaw;
+
+// for measuring commands and time
+int joypadRollPrev=0, joypadPitchPrev=0, joypadVerticalSpeedPrev=0, joypadYawPrev=0, hoverPrev=0;
+clock_t startTime=0;
+clock_t ellapsedTime = 0;
+
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
+
 
 int Px;
 int Py;
@@ -146,6 +153,7 @@ string actLargo = "";
 string actCorto = "";
 double angulo = 0;
 bool vuela = FALSE;
+
 
 Mat selectedImage;
 int selected = 2;
@@ -1514,7 +1522,6 @@ void phisPlot(double multiplier, double pointSize) {
             Scalar(trainedPhisColors[index][0], trainedPhisColors[index][1], trainedPhisColors[index][2]),
             2, 8, 0  );
 
-        
         // put text to indicate what each area represent
         putText(phis, trainedObjects[index],
             Point(
@@ -1874,7 +1881,9 @@ int main(int argc,char* argv[])
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = 0.0;
+    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = joypadYawRight =joypadYawLeft = 0;
+
+
 
     // Destination OpenCV Mat   
     Mat currentImage = Mat(240, 320, CV_8UC3);
@@ -1948,18 +1957,24 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-       //printf("\033[2J\033[1;1H");
+        //printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
             SDL_Event event;
             SDL_PollEvent(&event);
 
-            joypadRoll = SDL_JoystickGetAxis(m_joystick, 2);
-            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5);
-            joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1);
-            joypadYaw = SDL_JoystickGetAxis(m_joystick, 0);
-            joypadTakeOff = SDL_JoystickGetButton(m_joystick, 1);
+            joypadRoll = SDL_JoystickGetAxis(m_joystick, 2)/8;
+            joypadPitch = SDL_JoystickGetAxis(m_joystick, 5)/8;
+            joypadVerticalSpeed = SDL_JoystickGetAxis(m_joystick, 1)/4;
+
+            joypadYawRight = SDL_JoystickGetAxis(m_joystick, 4)+32768; /*La velocidad del angulo no es un problema tan grave*/
+            joypadYawLeft = SDL_JoystickGetAxis(m_joystick, 3)+32768;
+
+            joypadYaw=(joypadYawRight - joypadYawLeft)/4;
+
+
+            joypadTakeOff = SDL_JoystickGetButton(m_joystick,1); 
             joypadLand = SDL_JoystickGetButton(m_joystick, 2);
             joypadHover = SDL_JoystickGetButton(m_joystick, 0);
             joypadScan = SDL_JoystickGetButton(m_joystick, 3);
@@ -2097,6 +2112,24 @@ int main(int argc,char* argv[])
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
+            if (
+                joypadPitch != joypadPitchPrev ||
+                joypadRoll != joypadRollPrev ||
+                joypadYaw != joypadYawPrev ||
+                joypadVerticalSpeed != joypadVerticalSpeedPrev ||
+                hover != hoverPrev
+                ) 
+            {
+                ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
+                cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
+                joypadPitchPrev = joypadPitch;
+                joypadRollPrev = joypadRoll;
+                joypadYawPrev = joypadYaw;
+                joypadVerticalSpeedPrev = joypadVerticalSpeed;
+                hoverPrev = hover;
+                startTime = clock ();
+
+            }
             heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
