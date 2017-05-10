@@ -1470,10 +1470,10 @@ void findPath(Mat &dst, Mat &src, Point start, Point end, int direction) {
     Point current=start;
     int currentValue;
     currentValue = src.at<Vec3w>(current.y, current.x)[0];
-    circle(dst, start, 5, startColor, -1);
-    putText(dst, "Start Point", start, 
-            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-    vector<Point>distances; // right top left bottom
+    //circle(dst, start, 5, startColor, -1);
+    //putText(dst, "Start Point", start, 
+    //        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    //vector<Point>distances; // right top left bottom
     
     while(currentValue) {
         vector<double>values;
@@ -1522,9 +1522,9 @@ void findPath(Mat &dst, Mat &src, Point start, Point end, int direction) {
         currentValue=values[direction];
         current=coordinates[direction];
     }
-    circle(dst, end, 5, endColor, -1);
-    putText(dst, "End Point", end, 
-                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    //circle(dst, end, 5, endColor, -1);
+    //putText(dst, "End Point", end, 
+    //            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
 }
 
 void gotaDeAceite(Mat &dst, Mat &src, Point semilla) {
@@ -1791,13 +1791,6 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=405;
         }
-
-        gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
-            circle(stage, finalPoint, 5, endColor, -1);
-            putText(stage, "End Point", finalPoint, 
-                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-        findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
-        imshow( window_name, stage );
     }
 
     else if(actLargo == "DERECHA")
@@ -1817,18 +1810,17 @@ void planVuelo()
             finalPoint.x=356;
             finalPoint.y=405;
         }
-
-        gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
-            circle(stage, finalPoint, 5, endColor, -1);
-            putText(stage, "End Point", finalPoint, 
-                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-        findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
-        imshow( window_name, stage );
             
     }
     else
         cout << "Falle :(";
 
+    gotaDeAceite(gota_aceite_espacio, tempStage, finalPoint);
+    circle(stage, finalPoint, 5, endColor, -1);
+    putText(stage, "End Point", finalPoint, 
+        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+    findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
+    imshow( window_name, stage );
     vuela = FALSE;
 }
 
@@ -1916,7 +1908,7 @@ int main(int argc,char* argv[])
     // Destination OpenCV Mat   
     Mat currentImage = Mat(240, 320, CV_8UC3);
     // Show it  
-    //imshow("ParrotCam", currentImage);
+    imshow("ParrotCam", currentImage);
 
     // Initialize joystick
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
@@ -1965,8 +1957,8 @@ int main(int argc,char* argv[])
     namedWindow( window_name, WINDOW_AUTOSIZE );// Create a window for display.
     //createTrackbar( "Robot Radius", window_name, &robotRadius, maxRadius, on_radius_change );
     //createTrackbar( "Left Or Right", window_name, &leftOrRight, maxRadius, on_left_right_selection );
-    //setMouseCallback( window_name, mouseHandler);
-    setMouseCallback(window_name, mouseCoordinatesExampleCallback);
+    setMouseCallback( window_name, mouseHandler);
+    //setMouseCallback(window_name, mouseCoordinatesExampleCallback);
     // x = stage.cols / 2
     obstacle1=Point(356,276);
     obstacle2=Point(356,536);
@@ -1976,7 +1968,6 @@ int main(int argc,char* argv[])
     tempStage = Mat(stage.rows, stage.cols, CV_8UC3, Scalar(255, 255, 255));
     gota_aceite_espacio=Mat(stage.rows, stage.cols, CV_16UC3, Scalar(maxValue, maxValue, maxValue));
     view_refresh();
-    gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
 
     circle(stage, initialPoint, 5, startColor, -1);
     putText(stage, "Start Point", initialPoint, 
@@ -2104,6 +2095,13 @@ int main(int argc,char* argv[])
             case 'k': baja(); break;
             case 'h': hover = (hover + 1) % 2; break;
             case 'b': 
+                stageSpace(stage);
+                obstaclesBorder(stage);
+                circle(stage, initialPoint, 5, startColor, -1);
+                putText(stage, "Start Point", initialPoint, 
+                        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+                imshow( window_name, stage ); 
+
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
