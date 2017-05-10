@@ -125,6 +125,7 @@ clock_t startTime=0;
 clock_t ellapsedTime = 0;
 
 bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
+bool triangulo = FALSE;
 
 
 int Px;
@@ -1784,12 +1785,31 @@ void planVuelo()
             cout << "largo" << endl << endl;
             finalPoint.x=356;
             finalPoint.y=670;
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
         }
         else if(actCorto == "MEDIO")
         {
             cout << "medio" << endl << endl;
             finalPoint.x=356;
             finalPoint.y=405;
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
         }
     }
 
@@ -1803,12 +1823,30 @@ void planVuelo()
             cout << "largo" << endl << endl;
             finalPoint.x=356;
             finalPoint.y=670;
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
         }
         else if(actCorto == "MEDIO")
         {
             cout << "medio" << endl << endl;
             finalPoint.x=356;
             finalPoint.y=405;
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
+
+            //heli->setAngles(0.0, -10000.0, 0.0, 0.0, 0.0);
+            //usleep(500000);
         }
             
     }
@@ -2095,13 +2133,6 @@ int main(int argc,char* argv[])
             case 'k': baja(); break;
             case 'h': hover = (hover + 1) % 2; break;
             case 'b': 
-                stageSpace(stage);
-                obstaclesBorder(stage);
-                circle(stage, initialPoint, 5, startColor, -1);
-                putText(stage, "Start Point", initialPoint, 
-                        FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
-                imshow( window_name, stage ); 
-
                 segment(filteredImage,segmentedImg);
                 momentos(segmentedImg);
                 imshow("SEGMENTACION",segmentedImg);
@@ -2131,11 +2162,18 @@ int main(int argc,char* argv[])
         }
 
         if (joypadScan){
+            triangulo = TRUE;
             segment(filteredImage,segmentedImg);
             momentos(segmentedImg);
             imshow("SEGMENTACION",segmentedImg);
             classification();
             phisPlot(2,2);
+            decision();
+            if(vuela)
+            {
+                cout << "Entra a plan de vuelo" << endl << endl;
+                planVuelo();
+            }
         }
 
         hover = joypadHover ? 1 : 0;
@@ -2143,23 +2181,27 @@ int main(int argc,char* argv[])
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            // if (
-            //     joypadPitch != joypadPitchPrev ||
-            //     joypadRoll != joypadRollPrev ||
-            //     joypadYaw != joypadYawPrev ||
-            //     joypadVerticalSpeed != joypadVerticalSpeedPrev ||
-            //     hover != hoverPrev
-            //     ) 
-            // {
-            //     ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
-            //     cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
-            //     joypadPitchPrev = joypadPitch;
-            //     joypadRollPrev = joypadRoll;
-            //     joypadYawPrev = joypadYaw;
-            //     joypadVerticalSpeedPrev = joypadVerticalSpeed;
-            //     hoverPrev = hover;
-            //     startTime = clock ();
-            // }
+            if(triangulo)
+            {
+                if (
+                    joypadPitch != joypadPitchPrev ||
+                    joypadRoll != joypadRollPrev ||
+                    joypadYaw != joypadYawPrev ||
+                    joypadVerticalSpeed != joypadVerticalSpeedPrev ||
+                    hover != hoverPrev
+                    ) 
+                {
+                    ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
+                    cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
+                    joypadPitchPrev = joypadPitch;
+                    joypadRollPrev = joypadRoll;
+                    joypadYawPrev = joypadYaw;
+                    joypadVerticalSpeedPrev = joypadVerticalSpeed;
+                    hoverPrev = hover;
+                    startTime = clock ();
+                }   
+            }
+            
 
             heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
