@@ -168,6 +168,33 @@ double yiqMat[3][3] = {
     {0.312, -0.523, 0.211}
 };
 
+//Variables stage
+String base="/media/caceres95/C43A73F53A73E33A/Users/Carlos/Dropbox/Carrera/8vo Semestre/Vision para Robots/Lab/Vision/Parrot/src/";
+String filename="obstaculos.png";
+String window_name="Display window";
+Mat stage;
+Mat tempStage;
+Point obstacle1;
+Point obstacle2;
+Point robot;
+bool moveObstable1=false;
+bool moveObstable2=false;
+bool moveRobot=false;
+int obstacleRadius = 20;
+int robotRadius = 70;
+int maxRadius=70;
+int pointRadius=10;
+Scalar obstacleColor=Scalar(0,0,0);
+int maxValue=65535;
+Mat gota_aceite_espacio;
+Point finalPoint;
+int leftOrRight=maxRadius/2;
+int initialDir=0;
+Scalar startColor=Scalar(0,255,0);
+Scalar pathColor=Scalar(255,0,255);
+Scalar endColor=Scalar(0,0,255);
+Point initialPoint = Point(356, 120);
+
 // segmentation code
 class Pix{
 public:
@@ -1213,120 +1240,6 @@ void classification() {
     }
 }
 
-//AQUI ME QUEDEEEEEEEEEEEEEEEE_ continue
-void decision() {
-    if(let1 != "" && let2 != "")
-    {
-        cout << "Se detectaron 2 letras" << endl << endl;
-        if(let1 == "I" || let1 == "L" || let2 == "I" || let2 == "L")
-        {
-            cout << "Se detecto letra larga" << endl << endl;
-            if(let1 == "X" || let1 == "R" || let2 == "X" || let2 == "R")
-            {
-                cout << "Se detecto letra corta" << endl << endl;
-                vuela = TRUE;
-                //Accion de letra larga
-                if(let1 == "I" || let1 == "L")
-                {
-                    angulo = ang[0];
-                    if(let1 == "I")
-                    {
-                        cout << "Se identifico letra I" << endl << endl;
-                        actLargo = "IZQUIERDA";
-                    }
-                    else
-                    {
-                        cout << "Se identifico letra L" << endl << endl;
-                        actLargo = "DERECHA";
-                    }
-                }
-                else if(let2 == "I" || let2 == "L")
-                {
-                    angulo = ang[1];
-                    if(let2 == "I")
-                    {
-                        cout << "Se identifico letra I" << endl << endl;
-                        actLargo = "IZQUIERDA";
-                    }
-                    else
-                    {
-                        cout << "Se identifico letra L" << endl << endl;
-                        actLargo = "DERECHA";
-                    }
-                }
-
-                //Accion de letra corta
-                if(let1 == "X" || let1 == "R")
-                {
-                    if(let1 == "X")
-                    {
-                        cout << "Se identifico letra X" << endl << endl;
-                        actCorto = "LARGO";
-                    }
-                    else
-                    {
-                        cout << "Se identifico letra R" << endl << endl;
-                        actCorto = "MEDIO";
-                    }
-                }
-                else if(let2 == "X" || let2 == "R")
-                {
-                    if(let2 == "X")
-                    {
-                        cout << "Se identifico letra X" << endl << endl;
-                        actCorto = "LARGO";
-                    }
-                    else
-                    {
-                        cout << "Se identifico letra R" << endl << endl;
-                        actCorto = "MEDIO";
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        cout << "The pair of letters was not detected" << endl;
-    }
-    
-}
-
-void planVuelo()
-{
-    //cout << actLargo << endl;
-    if(actLargo == "IZQUIERDA")
-    {
-        cout << "Vuela izquierda ";
-        if(actCorto == "LARGO")
-        {
-            cout << "largo" << endl << endl;
-        }
-        else if(actCorto == "MEDIO")
-        {
-            cout << "medio" << endl << endl;
-        }
-    }
-
-    else if(actLargo == "DERECHA")
-    {   
-        cout << "Vuela derecha ";
-        if(actCorto == "LARGO")
-        {
-            cout << "largo" << endl << endl;
-        }
-        else if(actCorto == "MEDIO")
-        {
-            cout << "medio" << endl << endl;
-        }
-            
-    }
-    else
-        cout << "Falle :(";
-
-    vuela = FALSE;
-}
-
 void createWindows() {
     namedWindow("Click");
     setMouseCallback("Click", mouseCoordinatesExampleCallback);
@@ -1533,31 +1446,6 @@ void phisPlot(double multiplier, double pointSize) {
     }
     imshow("Phis (phi1, phi2)", phis);
 }
-
-String base="/media/caceres95/C43A73F53A73E33A/Users/Carlos/Dropbox/Carrera/8vo Semestre/Vision para Robots/Lab/Vision/Parrot/src/";
-String filename="obstaculos.png";
-String window_name="Display window";
-Mat stage;
-Mat tempStage;
-Point obstacle1;
-Point obstacle2;
-Point robot;
-bool moveObstable1=false;
-bool moveObstable2=false;
-bool moveRobot=false;
-int obstacleRadius = 20;
-int robotRadius = 1;
-int maxRadius=70;
-int pointRadius=10;
-Scalar obstacleColor=Scalar(0,0,0);
-int maxValue=65535;
-Mat gota_aceite_espacio;
-Point finalPoint;
-int leftOrRight=maxRadius/2;
-int initialDir=0;
-Scalar startColor=Scalar(0,255,0);
-Scalar pathColor=Scalar(255,0,255);
-Scalar endColor=Scalar(0,0,255);
 
 int oposite(int direction) {
     int opositeDirection=-1;
@@ -1804,6 +1692,146 @@ void mouseHandler(int event, int x, int y, int flags, void *param)
     }
 }
 
+//AQUI ME QUEDEEEEEEEEEEEEEEEE_ continue
+void decision() {
+    if(let1 != "" && let2 != "")
+    {
+        cout << "Se detectaron 2 letras" << endl << endl;
+        if(let1 == "I" || let1 == "L" || let2 == "I" || let2 == "L")
+        {
+            cout << "Se detecto letra larga" << endl << endl;
+            if(let1 == "X" || let1 == "R" || let2 == "X" || let2 == "R")
+            {
+                cout << "Se detecto letra corta" << endl << endl;
+                vuela = TRUE;
+                //Accion de letra larga
+                if(let1 == "I" || let1 == "L")
+                {
+                    angulo = ang[0];
+                    if(let1 == "I")
+                    {
+                        cout << "Se identifico letra I" << endl << endl;
+                        actLargo = "IZQUIERDA";
+                    }
+                    else
+                    {
+                        cout << "Se identifico letra L" << endl << endl;
+                        actLargo = "DERECHA";
+                    }
+                }
+                else if(let2 == "I" || let2 == "L")
+                {
+                    angulo = ang[1];
+                    if(let2 == "I")
+                    {
+                        cout << "Se identifico letra I" << endl << endl;
+                        actLargo = "IZQUIERDA";
+                    }
+                    else
+                    {
+                        cout << "Se identifico letra L" << endl << endl;
+                        actLargo = "DERECHA";
+                    }
+                }
+
+                //Accion de letra corta
+                if(let1 == "X" || let1 == "R")
+                {
+                    if(let1 == "X")
+                    {
+                        cout << "Se identifico letra X" << endl << endl;
+                        actCorto = "LARGO";
+                    }
+                    else
+                    {
+                        cout << "Se identifico letra R" << endl << endl;
+                        actCorto = "MEDIO";
+                    }
+                }
+                else if(let2 == "X" || let2 == "R")
+                {
+                    if(let2 == "X")
+                    {
+                        cout << "Se identifico letra X" << endl << endl;
+                        actCorto = "LARGO";
+                    }
+                    else
+                    {
+                        cout << "Se identifico letra R" << endl << endl;
+                        actCorto = "MEDIO";
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        cout << "The pair of letters was not detected" << endl;
+    }
+    
+}
+
+void planVuelo()
+{
+    //cout << actLargo << endl;
+    if(actLargo == "IZQUIERDA")
+    {
+        initialDir = 2;
+        cout << "Vuela izquierda ";
+
+        if(actCorto == "LARGO")
+        {
+            cout << "largo" << endl << endl;
+            finalPoint.x=356;
+            finalPoint.y=670;
+        }
+        else if(actCorto == "MEDIO")
+        {
+            cout << "medio" << endl << endl;
+            finalPoint.x=356;
+            finalPoint.y=405;
+        }
+
+        gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+            circle(stage, finalPoint, 5, endColor, -1);
+            putText(stage, "End Point", finalPoint, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+        findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
+        imshow( window_name, stage );
+    }
+
+    else if(actLargo == "DERECHA")
+    {
+        initialDir = 0;
+        cout << "Vuela derecha ";
+
+        if(actCorto == "LARGO")
+        {
+            cout << "largo" << endl << endl;
+            finalPoint.x=356;
+            finalPoint.y=670;
+        }
+        else if(actCorto == "MEDIO")
+        {
+            cout << "medio" << endl << endl;
+            finalPoint.x=356;
+            finalPoint.y=405;
+        }
+
+        gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+            circle(stage, finalPoint, 5, endColor, -1);
+            putText(stage, "End Point", finalPoint, 
+                FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
+        findPath(stage, gota_aceite_espacio, initialPoint, finalPoint, initialDir);
+        imshow( window_name, stage );
+            
+    }
+    else
+        cout << "Falle :(";
+
+    vuela = FALSE;
+}
+
 
 int main(int argc,char* argv[])
 {
@@ -1935,9 +1963,10 @@ int main(int argc,char* argv[])
     bottomLeft=Point(0, stage.rows);
 
     namedWindow( window_name, WINDOW_AUTOSIZE );// Create a window for display.
-    createTrackbar( "Robot Radius", window_name, &robotRadius, maxRadius, on_radius_change );
-    createTrackbar( "Left Or Right", window_name, &leftOrRight, maxRadius, on_left_right_selection );
-    setMouseCallback( window_name, mouseHandler);
+    //createTrackbar( "Robot Radius", window_name, &robotRadius, maxRadius, on_radius_change );
+    //createTrackbar( "Left Or Right", window_name, &leftOrRight, maxRadius, on_left_right_selection );
+    //setMouseCallback( window_name, mouseHandler);
+    setMouseCallback(window_name, mouseCoordinatesExampleCallback);
     // x = stage.cols / 2
     obstacle1=Point(356,276);
     obstacle2=Point(356,536);
@@ -1948,6 +1977,10 @@ int main(int argc,char* argv[])
     gota_aceite_espacio=Mat(stage.rows, stage.cols, CV_16UC3, Scalar(maxValue, maxValue, maxValue));
     view_refresh();
     gotaDeAceite(gota_aceite_espacio, tempStage, Point(finalPoint.x, finalPoint.y));
+
+    circle(stage, initialPoint, 5, startColor, -1);
+    putText(stage, "Start Point", initialPoint, 
+            FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(0,0,0), 1, CV_AA);
     imshow( window_name, stage );   
 
     //cap >> currentImage;
@@ -1957,7 +1990,7 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-        //printf("\033[2J\033[1;1H");
+        printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -1983,23 +2016,23 @@ int main(int argc,char* argv[])
 
         Vec3b aux;
 
-        // //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        // printf("===================== Parrot Basic Example =====================\n\n");
-        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        // fprintf(stdout, "Hover   : %d \n", hover);
-        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        // fprintf(stdout, "  Land    : %d \n", joypadLand);
-        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
+        //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        printf("===================== Parrot Basic Example =====================\n\n");
+        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
+        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        fprintf(stdout, "Hover   : %d \n", hover);
+        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+        fprintf(stdout, "  Land    : %d \n", joypadLand);
+        fprintf(stdout, "  Scan    : %d \n", joypadScan);
+        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         //cap >> currentImage;
 
@@ -2112,24 +2145,24 @@ int main(int argc,char* argv[])
         //setting the drone angles
         if (joypadRoll != 0 || joypadPitch != 0 || joypadVerticalSpeed != 0 || joypadYaw != 0)
         {
-            if (
-                joypadPitch != joypadPitchPrev ||
-                joypadRoll != joypadRollPrev ||
-                joypadYaw != joypadYawPrev ||
-                joypadVerticalSpeed != joypadVerticalSpeedPrev ||
-                hover != hoverPrev
-                ) 
-            {
-                ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
-                cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
-                joypadPitchPrev = joypadPitch;
-                joypadRollPrev = joypadRoll;
-                joypadYawPrev = joypadYaw;
-                joypadVerticalSpeedPrev = joypadVerticalSpeed;
-                hoverPrev = hover;
-                startTime = clock ();
+            // if (
+            //     joypadPitch != joypadPitchPrev ||
+            //     joypadRoll != joypadRollPrev ||
+            //     joypadYaw != joypadYawPrev ||
+            //     joypadVerticalSpeed != joypadVerticalSpeedPrev ||
+            //     hover != hoverPrev
+            //     ) 
+            // {
+            //     ellapsedTime = (double)(clock() - startTime)*1000.0 / CLOCKS_PER_SEC;
+            //     cout << joypadPitchPrev << " " << joypadRollPrev << " " << joypadYawPrev << " " << joypadVerticalSpeedPrev << " " << hoverPrev << " " << ellapsedTime << endl;
+            //     joypadPitchPrev = joypadPitch;
+            //     joypadRollPrev = joypadRoll;
+            //     joypadYawPrev = joypadYaw;
+            //     joypadVerticalSpeedPrev = joypadVerticalSpeed;
+            //     hoverPrev = hover;
+            //     startTime = clock ();
+            // }
 
-            }
             heli->setAngles(joypadPitch, joypadRoll, joypadYaw, joypadVerticalSpeed, hover);
             navigatedWithJoystick = true;
         }
