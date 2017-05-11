@@ -124,7 +124,7 @@ int joypadRollPrev=0, joypadPitchPrev=0, joypadVerticalSpeedPrev=0, joypadYawPre
 clock_t startTime=0;
 clock_t ellapsedTime = 0;
 
-bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan;
+bool navigatedWithJoystick, joypadTakeOff, joypadLand, joypadHover, joypadScan, joypadFly;
 
 //Variables para 
 bool triangulo = FALSE;
@@ -1840,29 +1840,8 @@ void planVuelo()
             finalPoint.y=405;
 
             finish();
-            //PIla nuestra
-            if(angulo < 0)
-            {
-                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
-                usleep(500000);
-            }
-            else
-            {
-                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
-                usleep(500000);
-            }
 
-            //heli->setAngles(pitch, roll, yaw, height, hover);
-            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(1000000);
-
-            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            usleep(1800000);
-
-            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            usleep(1700000);
-
-            // //pila kevin
+            // //PIla nuestra
             // if(angulo < 0)
             // {
             //     heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
@@ -1879,10 +1858,61 @@ void planVuelo()
             // usleep(1000000);
 
             // heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            // usleep(1450000);
+            // usleep(1800000);
 
             // heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            // usleep(1750000);
+            // usleep(1700000);
+
+            //pila kevin
+            if(angulo < 0)
+            {
+                heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+                usleep(500000);
+            }
+            else
+            {
+                heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+                usleep(500000);
+            }
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            usleep(1200000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
 
             heli->land();
         }
@@ -2040,7 +2070,7 @@ int main(int argc,char* argv[])
     
     // Initial values for control   
     pitch = roll = yaw = height = 0.0;
-    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = joypadYawRight =joypadYawLeft 
+    joypadPitch = joypadRoll = joypadYaw = joypadVerticalSpeed = joypadScan = joypadFly = joypadYawRight =joypadYawLeft 
     = joypadRollLeft = joypadRollRight = 0;
 
 
@@ -2125,7 +2155,7 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-        printf("\033[2J\033[1;1H");
+        //printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -2178,30 +2208,32 @@ int main(int argc,char* argv[])
 
             joypadTakeOff = SDL_JoystickGetButton(m_joystick,1); 
             joypadLand = SDL_JoystickGetButton(m_joystick, 2);
-            joypadHover = SDL_JoystickGetButton(m_joystick, 0);
+            // joypadHover = SDL_JoystickGetButton(m_joystick, 0);
             joypadScan = SDL_JoystickGetButton(m_joystick, 3);
+            joypadFly = SDL_JoystickGetButton(m_joystick, 0);
             
         }
 
         Vec3b aux;
 
-        //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        printf("===================== Parrot Basic Example =====================\n\n");
-        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        fprintf(stdout, "Hover   : %d \n", hover);
-        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        fprintf(stdout, "  Land    : %d \n", joypadLand);
-        fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
+        // //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        // printf("===================== Parrot Basic Example =====================\n\n");
+        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
+        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        // fprintf(stdout, "Hover   : %d \n", hover);
+        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+        // fprintf(stdout, "  Land    : %d \n", joypadLand);
+        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
+        // fprintf(stdout, "  Fly    : %d \n", joypadFly);
+        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         //cap >> currentImage;
 
@@ -2279,11 +2311,6 @@ int main(int argc,char* argv[])
                 classification();
                 phisPlot(2,2);
                 decision();
-                if(vuela)
-                {
-                    cout << "Entra a plan de vuelo" << endl << endl;
-                    planVuelo();
-                }
             break;
 
             case '1': selected=1; break;
@@ -2311,11 +2338,15 @@ int main(int argc,char* argv[])
                 classification();
                 phisPlot(2,2);
                 decision();
-                if(vuela)
-                {
-                    cout << "Entra a plan de vuelo" << endl << endl;
-                    planVuelo();
-                }
+            }
+        }
+
+        if(joypadFly)
+        {
+            if(vuela)
+            {
+                cout << "Entra a plan de vuelo" << endl << endl;
+                planVuelo();
             }
         }
 
