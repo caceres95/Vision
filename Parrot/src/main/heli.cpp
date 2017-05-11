@@ -1822,13 +1822,13 @@ void planVuelo()
 
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(1700000);
+            usleep(800000);
 
             heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            usleep(3000000);
+            usleep(2600000);
 
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            usleep(1900000);
+            usleep(1500000);
 
             heli->land();
 
@@ -1840,7 +1840,7 @@ void planVuelo()
             finalPoint.y=405;
 
             finish();
-
+            //PIla nuestra
             if(angulo < 0)
             {
                 heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
@@ -1854,13 +1854,35 @@ void planVuelo()
 
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(1800000);
+            usleep(1000000);
 
             heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
             usleep(1800000);
 
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
             usleep(1700000);
+
+            // //pila kevin
+            // if(angulo < 0)
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+            //     usleep(500000);
+            // }
+            // else
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+            //     usleep(500000);
+            // }
+
+            // //heli->setAngles(pitch, roll, yaw, height, hover);
+            // heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            // usleep(1000000);
+
+            // heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            // usleep(1450000);
+
+            // heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            // usleep(1750000);
 
             heli->land();
         }
@@ -1923,7 +1945,7 @@ void planVuelo()
 
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            usleep(1800000);
+            usleep(1000000);
 
             heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
             usleep(1800000);
