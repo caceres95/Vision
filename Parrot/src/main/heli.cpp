@@ -133,7 +133,7 @@ bool running = FALSE;
 
 int Px;
 int Py;
-int vC1=80, vC2=109, vC3=106;
+int vC1=80, vC2=115, vC3=102;
 int thresh1=22, thresh2=20, thresh3=36;
 
 //Variables globales de figuras
@@ -1809,6 +1809,30 @@ void planVuelo()
 
             finish();
 
+            // if(angulo < 0)
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+            //     usleep(500000);
+            // }
+            // else
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+            //     usleep(500000);
+            // }
+
+            // //heli->setAngles(pitch, roll, yaw, height, hover);
+            // heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            // usleep(800000);
+
+            // heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            // usleep(2600000);
+
+            // heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            // usleep(1500000);
+
+            // heli->land();
+
+            //pila kevin
             if(angulo < 0)
             {
                 heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
@@ -1820,15 +1844,43 @@ void planVuelo()
                 usleep(500000);
             }
 
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(2000000);
+
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(800000);
+            usleep(1200000);
 
-            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            usleep(2600000);
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
             usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
             heli->land();
 
@@ -1880,6 +1932,13 @@ void planVuelo()
 
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
             usleep(1500000);
 
             heli->setAngles(0.0, 0, 0.0, 0.0, 1);
@@ -1893,26 +1952,11 @@ void planVuelo()
             usleep(1000000);
 
             //heli->setAngles(pitch, roll, yaw, height, hover);
-            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
-            usleep(1000000);
-
-            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
-            usleep(1000000);
-
-            //heli->setAngles(pitch, roll, yaw, height, hover);
-            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
-            usleep(1000000);
-
-            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
-            usleep(1000000);
-
-            //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            usleep(1200000);
+            usleep(1500000);
 
             heli->setAngles(0.0, 0, 0.0, 0.0, 1);
             usleep(1000000);
-
 
             heli->land();
         }
@@ -1931,6 +1975,29 @@ void planVuelo()
 
             finish();
 
+            // if(angulo < 0)
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+            //     usleep(500000);
+            // }
+            // else
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+            //     usleep(500000);
+            // }
+
+            // //heli->setAngles(pitch, roll, yaw, height, hover);
+            // heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            // usleep(1700000);
+
+            // heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            // usleep(3000000);
+
+            // heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            // usleep(1900000);
+
+            // heli->land();
+
             if(angulo < 0)
             {
                 heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
@@ -1942,15 +2009,43 @@ void planVuelo()
                 usleep(500000);
             }
 
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(2000000);
+
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
-            usleep(1700000);
+            usleep(1200000);
 
-            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            usleep(3000000);
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(1900000);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
             heli->land();
         }
@@ -1962,6 +2057,29 @@ void planVuelo()
 
             finish();
 
+            // if(angulo < 0)
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
+            //     usleep(500000);
+            // }
+            // else
+            // {
+            //     heli->setAngles(0.0, 0.0, 0.0, 10000, 0.0);
+            //     usleep(500000);
+            // }
+
+            // //heli->setAngles(pitch, roll, yaw, height, hover);
+            // heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
+            // usleep(1000000);
+
+            // heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
+            // usleep(1800000);
+
+            // heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
+            // usleep(1700000);
+
+            // heli->land();
+
             if(angulo < 0)
             {
                 heli->setAngles(0.0, 0.0, 0.0, -10000, 0.0);
@@ -1973,15 +2091,36 @@ void planVuelo()
                 usleep(500000);
             }
 
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(2000000);
+
             //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, 3276, 0.0, 0.0, 0.0);
             usleep(1000000);
 
-            heli->setAngles(3276, 0, 0.0, 0.0, 0.0);
-            usleep(1800000);
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
+            heli->setAngles(3276, 0.0, 0.0, 0.0, 0.0);
+            usleep(1000000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
+
+            //heli->setAngles(pitch, roll, yaw, height, hover);
             heli->setAngles(0.0, -3276, 0.0, 0.0, 0.0);
-            usleep(1700000);
+            usleep(1500000);
+
+            heli->setAngles(0.0, 0, 0.0, 0.0, 1);
+            usleep(1000000);
 
             heli->land();
         }
@@ -2155,7 +2294,7 @@ int main(int argc,char* argv[])
     {
 
         // Clear the console
-        //printf("\033[2J\033[1;1H");
+        printf("\033[2J\033[1;1H");
 
         if (useJoystick)
         {
@@ -2216,24 +2355,24 @@ int main(int argc,char* argv[])
 
         Vec3b aux;
 
-        // //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
-        // printf("===================== Parrot Basic Example =====================\n\n");
-        // fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
-        // fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
-        // fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
-        // fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
-        // fprintf(stdout, "Hover   : %d \n", hover);
-        // fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
-        // fprintf(stdout, "  Roll    : %d \n", joypadRoll);
-        // fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
-        // fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
-        // fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
-        // fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
-        // fprintf(stdout, "  Land    : %d \n", joypadLand);
-        // fprintf(stdout, "  Scan    : %d \n", joypadScan);
-        // fprintf(stdout, "  Fly    : %d \n", joypadFly);
-        // fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
-        // cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
+        //prints the drone telemetric data, helidata struct contains drone angles, speeds and battery status
+        printf("===================== Parrot Basic Example =====================\n\n");
+        fprintf(stdout,"First val1 %d Secod Val %d, Third Val %d \n",idTable[matriz[0][0]].val[0],idTable[matriz[0][0]].val[1],idTable[matriz[0][0]].val[2]);
+        fprintf(stdout, "Angles  : %.2lf %.2lf %.2lf \n", helidata.phi, helidata.psi, helidata.theta);
+        fprintf(stdout, "Speeds  : %.2lf %.2lf %.2lf \n", helidata.vx, helidata.vy, helidata.vz);
+        fprintf(stdout, "Battery : %.0lf \n", helidata.battery);
+        fprintf(stdout, "Hover   : %d \n", hover);
+        fprintf(stdout, "Joypad  : %d \n", useJoystick ? 1 : 0);
+        fprintf(stdout, "  Roll    : %d \n", joypadRoll);
+        fprintf(stdout, "  Pitch   : %d \n", joypadPitch);
+        fprintf(stdout, "  Yaw     : %d \n", joypadYaw);
+        fprintf(stdout, "  V.S.    : %d \n", joypadVerticalSpeed);
+        fprintf(stdout, "  TakeOff : %d \n", joypadTakeOff);
+        fprintf(stdout, "  Land    : %d \n", joypadLand);
+        fprintf(stdout, "  Scan    : %d \n", joypadScan);
+        fprintf(stdout, "  Fly    : %d \n", joypadFly);
+        fprintf(stdout, "Navigating with Joystick: %d \n", navigatedWithJoystick ? 1 : 0);
+        cout<<"Pos X: "<<Px<<" Pos Y: "<<Py<<" Valor "<<canales<<": ("<<vC3<<","<<vC2<<","<<vC1<<")"<<endl;
 
         //cap >> currentImage;
 
